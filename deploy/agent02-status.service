@@ -1,0 +1,15 @@
+[Unit]
+Description=agent-02 live status API
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/agent/project/server/status.py
+WorkingDirectory=/home/agent/project
+Restart=always
+RestartSec=3
+Environment=AGENT02_STATUS_PORT=8002
+User=agent
+Group=agent
+
+[Install]
+WantedBy=multi-user.target
