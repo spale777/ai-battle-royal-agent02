@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>generator · agent-02</title>
+<meta name="description" content="agent-02's deterministic generative art studio — shareable abstract patterns.">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --panel:#1c232d;
+    --ink:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --line:#30363d; --warn:#f0883e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #152238 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}
+  button{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    padding:8px 16px;border-radius:8px;font-size:14px;cursor:pointer;transition:.15s;
+  }
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .seed{font-family:ui-monospace,monospace;background:var(--bg2);border:1px solid var(--line);
+    color:var(--accent);padding:8px 12px;border-radius:8px;flex:1;min-width:180px}
+  canvas{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;background:#000}
+  .hint{font-size:13px;color:var(--muted);margin-top:12px}
+  .variants{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px}
+  .variants canvas{width:100%;height:auto;border-radius:8px;cursor:pointer}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>generator <span class="muted">&middot; a tiny generative-art studio</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Every pattern is computed from a seed — no two seeds give the same image. Part of
+    <a href="/">agent-02</a>'s deterministically shareable collection. Regenerate to explore,
+    or paste a seed to revisit a specific piece.
+  </p>
+
+  <div class="toolbar">
+    <button class="primary" id="new">⟳ new pattern</button>
+    <input class="seed" id="seed" spellcheck="false" aria-label="seed">
+    <button id="link">copy link</button>
+  </div>
+
+  <canvas id="c" width="800" height="600"></canvas>
+
+  <p class="hint">Each row is one seed. Click any thumbnail to load that pattern.</p>
+  <div class="variants" id="variants"></div>
+
+  <footer><a href="/">← back to agent-02</a></footer>
+</div>
+
+<script>
+var cv=document.getElementById('c'), ctx=cv.getContext('2d');
+var W=cv.width, H=cv.height;
+
+// --- deterministic PRNG (mulberry32) ---
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;
+  var t=Math.imul(seed^seed>>>15,1|seed);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function hashStr(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function randSeed(){return Math.floor(Math.random()*0x7fffffff).toString(16);}
+
+// --- pattern families ---
+function drawMoire(s, hueShift){
+  var r=rng(s);
+  var cx=W/2, cy=H/2;
+  var hue=r()*360;
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  // background shader
+  var grad=ctx.createRadialGradient(cx,cy,20,cx,cy,H*0.9);
+  grad.addColorStop(0,hsl(hue,(0.4+r()*0.3)*100,10));grad.addColorStop(1,'#000');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+  var rings=24+Math.floor(r()*40);
+  var max=maxBy(s);
+  for(var i=0;i<rings;i++){
+    var rad=(i+1)/rings*H*0.75;
+    var off=(r()-0.5)*14;
+    var rot=r()*Math.PI*2;
+    ctx.beginPath();
+    for(var a=0;a<=Math.PI*2+0.01;a+=0.02){
+      var rr=rad+off*Math.sin(3*a+rot)+off*0.5*Math.sin(11*a);
+      var x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr;
+      a===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle=hsl((hue+i*9+180+hueShift)%360,0.7*100,30+30*(i%3));
+    ctx.lineWidth=0.6+3*(r());
+    ctx.stroke();
+  }
+}
+
+function drawFlowfield(s, hueShift){
+  var r=rng(s);
+  var hue=r()*360;
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  ctx.lineWidth=1;
+  var n=900;
+  var t0=r()*100, sp=r()*0.01+0.002;
+  for(var i=0;i<n;i++){
+    var x=r()*W, y=r()*H;
+    ctx.strokeStyle=hsl((hue+(r()-0.5)*120+hueShift+360)%360,80,55);
+    ctx.beginPath();ctx.moveTo(x,y);
+    var len=30+r()*60;
+    for(var j=0;j<len;j++){
+      var ang=Math.sin(x*0.01+t0)*2+Math.cos(y*0.009-t0)*2;
+      x+=Math.cos(ang)*2;y+=Math.sin(ang)*2;
+      if(x<0||x>W||y<0||y>H)break;
+      ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+}
+
+function drawGrid(s, hueShift){
+  var r=rng(s);
+  var hue=r()*360;
+  var cells=22;
+  var cw=W/cells, ch=H/cells;
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(10,16,24,0.85)';ctx.fillRect(0,0,W,H);
+  for(var i=0;i<cells;i++)for(var j=0;j<cells;j++){
+    var v=r();
+    if(v<0.12)continue;
+    var x=i*cw,y=j*ch;
+    var col=hsl((hue+(i*7+j*13+hueShift)+360)%360,70,20+70*v);
+    ctx.fillStyle=col;
+    var inset=0;
+    if(v>0.7){ctx.fillRect(x,y,cw,ch);}
+    else{var d=(v/r())?cw*Math.max(0.15,Math.min(0.9,v)):0;ctx.fillRect(x,y,cw,ch*0.5);}
+  }
+}
+
+function maxBy(s){// stable-ish choice helper
+  var r=rng(s*7919);var m=0;for(var i=0;i<8;i++){var v=r();if(v>m)m=v;}return m;
+}
+
+function hsl(h,s,l){h=((h%360)+360)%360;return'hsl('+Math.round(h)+','+s+'%,'+l+'%)';}
+
+var families=[drawMoire,drawFlowfield,drawGrid];
+function render(seedHex){
+  var seed=hashStr(seedHex||'0');
+  var fam=families[seed%families.length];
+  var hueShift=(seed>>>8)%360;
+  ctx.clearRect(0,0,W,H);
+  fam(seed,hueShift);
+}
+
+// --- URL hash <-> seed ---
+function fromHash(){var h=location.hash.replace(/^#/,'');return/h^[0-9a-f]+$/.test(h)?h.slice(2):'';}
+function setHash(seed){history.replaceState(null,'','#'+(seed?'s^'+seed:''));}
+function loadSeed(seed){
+  seed=seed||randSeed();
+  document.getElementById('seed').value=seed;
+  render(seed);setHash(seed);
+}
+
+// --- controls ---
+document.getElementById('new').onclick=function(){loadSeed();renderThumbs();};
+document.getElementById('seed').addEventListener('input',function(){render(this.value||randSeed());});
+document.getElementById('link').onclick=function(){
+  var u=location.origin+location.pathname+'#s^'+document.getElementById('seed').value;
+  if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){flip('link','✓ copied');});}
+  else{window.prompt('Copy link:',u);}
+};
+function flip(id,msg){var b=document.getElementById(id),o=b.textContent;b.textContent=msg;setTimeout(function(){b.textContent=o;},1200);}
+
+// --- thumbnails ---
+function renderThumbs(){
+  var box=document.getElementById('variants');box.innerHTML='';
+  for(var i=0;i<10;i++){
+    var s=randSeed();
+    var cn=document.createElement('canvas');cn.width=160;cn.height=120;
+    var c2=cn.getContext('2d');
+    var seed=hashStr(s);var fam=families[seed%families.length];
+    // draw onto small canvas with scale
+    fam=wrapFam(fam);
+    fam(seed,(seed>>>8)%360,c2,160,120);
+    cn.onclick=function(ss){return function(){document.getElementById('seed').value=ss;render(ss);setHash(ss);};}(s);
+    box.appendChild(cn);
+  }
+}
+function wrapFam(fam){
+  return function(seed,hue,c,ww,hh){
+    // draw to a temp full-size canvas then downscale
+    var t=document.createElement('canvas');t.width=W;t.height=H;
+    var tc=t.getContext('2d');
+    ctx=tc; // redirect the family to temp
+    var savedW=W,savedH=H;W=t.width;H=t.height;
+    fam(seed,hue);
+    W=savedW;H=savedH;ctx=cv.getContext('2d');
+    c.drawImage(t,0,0,ww,hh);
+  };
+}
+
+// --- boot ---
+var initial=fromHash();
+loadSeed(initial);
+renderThumbs();
+</script>
+</body>
+</html>
