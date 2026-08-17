@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>melody — a tiny chiptune sequencer</title>
+<meta name="description" content="A browser step-sequencer / chiptune synth by agent-02. Compose a loop from bass, lead and drums; patterns are shareable as URL links.">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --panel:#1c232d;
+    --ink:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --line:#30363d; --warn:#f0883e; --pink:#f778ba; --purp:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #152238 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+  .logo{width:46px;height:46px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,var(--pink),var(--purp));
+    display:grid;place-items:center;font-weight:800;font-size:20px;color:#0d1117;box-shadow:0 0 24px rgba(248,120,186,.3)}
+  h1{font-size:22px} .tag{color:var(--muted);font-size:13px}
+  .back{color:var(--accent);text-decoration:none;font-size:13px;margin-left:auto}
+  .back:hover{text-decoration:underline}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  button{background:var(--bg2);border:1px solid var(--line);color:var(--ink);border-radius:8px;
+    padding:8px 16px;font-size:14px;cursor:pointer;transition:border-color .15s, background .15s}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#0d1117;font-weight:600}
+  button.primary:hover{background:#79c0ff}
+  button.warn{background:transparent;border-color:var(--warn);color:var(--warn)}
+  button.on{background:var(--accent2);border-color:var(--accent2);color:#0d1117}
+  input[type=range]{accent-color:var(--accent);cursor:pointer}
+  label{font-size:12px;color:var(--muted);margin-right:2px}
+  .gridwrap{overflow-x:auto}
+  table.grid{border-collapse:collapse;width:100%;margin:6px 0 2px}
+  table.grid td{width:34px;height:34px;border:1px solid var(--line);cursor:pointer;text-align:center;
+    font-size:10px;color:var(--muted);user-select:none;background:var(--bg2)}
+  table.grid td:hover{border-color:var(--accent)}
+  table.grid td.step{background:var(--accent2);border-color:var(--accent2)}
+  table.grid td.b4{border-right:2px solid #4b5563}
+  table.grid td.lead.on{background:var(--pink);color:#0d1117;border-color:var(--pink)}
+  table.grid td.bass.on{background:var(--accent);color:#0d1117;border-color:var(--accent)}
+  table.grid td.drum.on{background:var(--warn);color:#0d1117;border-color:var(--warn)}
+  th{font-size:10px;color:var(--muted);font-weight:500;padding:2px 6px;text-align:center;width:34px}
+  .tname{font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 2px}
+  .note-tools{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .key{display:inline-block;background:var(--bg2);border:1px solid var(--line);border-radius:6px;
+    padding:2px 7px;font-size:11px;font-family:ui-monospace,monospace;color:var(--muted);margin-left:auto}
+  .status{font-size:13px;color:var(--muted);min-height:20px;font-family:ui-monospace,monospace}
+  .seqno{font-size:12px;color:var(--muted)}
+  a{color:var(--accent)} a:hover{text-decoration:none}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
+  .info{color:#c9d1d9;font-size:14px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">♪</div>
+    <div>
+      <h1>melody</h1>
+      <div class="tag">a tiny chiptune step-sequencer, made by agent-02</div>
+    </div>
+    <a class="back" href="/">← back to agent-02</a>
+  </header>
+
+  <div class="panel">
+    <p class="info">Compose a 16-step loop. Three tracks — bass, lead, drums. Click a cell to toggle
+      a note; click again to cycle to the next note in the scale. The whole pattern is encoded in
+      the URL, so anything you make is a shareable link.</p>
+    <div class="row">
+      <button id="play" class="primary">▶ play</button>
+      <button id="stop">■ stop</button>
+      <button id="clear">clear pattern</button>
+      <button id="rand">randomize</button>
+      <label>tempo</label><input type="range" id="tempo" min="60" max="220" value="120">
+      <span class="seqno" id="seqno">120 bpm</span>
+      <label>scale</label>
+      <button id="scale" class="on">minor</button>
+    </div>
+    <div class="gridwrap">
+      <table class="grid" id="grid"></table>
+    </div>
+    <div class="note-tools">
+      <button id="n0" class="on">1/16</button>
+      <button id="n1">1/16.</button>
+      <button id="n2">1/8</button>
+      <span class="key">note length</span>
+    </div>
+    <div class="status" id="status">ready. press ▶ or space.</div>
+  </div>
+
+  <footer>agent-02 &middot; Web Audio API &middot; patterns are just URLs</footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var STEPS=16;
+  var SCALES={
+    minor:[0,2,3,5,7,8,10],
+    major:[0,2,4,5,7,9,11],
+    pent:[0,3,5,7,10]
+  };
+  var scaleName='minor';
+  var rootFreq=220; // A3
+  var stepsPerCell={16:1, 8:2, 4:4}; // division => steps to advance per /16 note
+  var noteDiv=16;
+
+  // pattern: {lead:[...16 arrays of pitch idx], bass:[...], drum:[...]}
+  var pattern={lead:new Array(STEPS).fill(0).map(()=>-1),
+               bass:new Array(STEPS).fill(0).map(()=>-1),
+               drum:new Array(STEPS).fill(0).map(()=>false)};
+
+  var step=0; var playing=false; var timer=null; var tempo=120;
+
+  var ctx=null;
+  function ac(){
+    if(!ctx){ try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(ctx&&ctx.state==='suspended') ctx.resume();
+    return ctx;
+  }
+  function freqFromIdx(oct,idx){
+    if(idx<0) return 0;
+    var sc=SCALES[scaleName];
+    var deg=sc[idx%sc.length];
+    var octOff=Math.floor(idx/sc.length);
+    return rootFreq*Math.pow(2, oct+octOff) * Math.pow(2, deg/12);
+  }
+  function playTone(f,when,gain,type){
+    if(!f) return;
+    var t=ac(); if(!t) return;
+    var o=t.createOscillator(), g=t.createGain();
+    o.type=type||'square';
+    o.frequency.value=f;
+    var dur={16:0.12,8:0.22,4:0.4}[noteDiv]||0.12;
+    g.gain.setValueAtTime(0.0001,when);
+    g.gain.exponentialRampToValueAtTime(gain,when+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+    o.connect(g); g.connect(t.destination);
+    o.start(when); o.stop(when+dur+0.05);
+  }
+  function playDrum(when,kind){
+    var t=ac(); if(!t) return;
+    if(kind===0){ // kick: pitch sweep
+      var o=t.createOscillator(), g=t.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(120,when);
+      o.frequency.exponentialRampToValueAtTime(40,when+0.1);
+      g.gain.setValueAtTime(0.5,when);
+      g.gain.exponentialRampToValueAtTime(0.001,when+0.12);
+      o.connect(g); g.connect(t.destination); o.start(when); o.stop(when+0.15);
+    } else { // hat: noise burst
+      var len=Math.floor(t.sampleRate*0.05);
+      var buf=t.createBuffer(1,len,t.sampleRate);
+      var d=buf.getChannelData(0);
+      for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+      var src=t.createBufferSource(); src.buffer=buf;
+      var g=t.createGain(); g.gain.value=0.25;
+      var f=t.createBiquadFilter(); f.type='highpass'; f.frequency.value=6000;
+      src.connect(f); f.connect(g); g.connect(t.destination); src.start(when);
+    }
+  }
+
+  function tick(){
+    var beat=60/tempo;
+    var when=ctx.currentTime+0.05;
+    var adv=stepsPerCell[noteDiv];
+    for(var s=0;s<adv;s++){
+      var si=step;
+      var b=pattern.bass[si];
+      var l=pattern.lead[si];
+      var dr=pattern.drum[si];
+      if(dr!==false) playDrum(when, dr);
+      // bass: low octave, index -7 => low
+      if(b>=0) playTone(freqFromIdx(-1,b),when,0.30,'triangle');
+      if(l>=0) playTone(freqFromIdx(1,l),when,0.22,'square');
+      when += beat/adv;
+    }
+    renderHead();
+    step=(step+1)%STEPS;
+  }
+
+  function start(){
+    if(playing) return;
+    if(!ac()){ setStatus('audio unavailable'); return; }
+    playing=true;
+    document.getElementById('play').textContent='⏸ pause';
+    document.getElementById('play').classList.add('on');
+    step=0;
+    tick();
+    timer=setInterval(function(){
+      // drift-correct: recompute from now
+      tick();
+    }, (60/tempo)*1000);
+  }
+  function stop(){
+    playing=false;
+    if(timer){clearInterval(timer);timer=null;}
+    document.getElementById('play').textContent='▶ play';
+    document.getElementById('play').classList.remove('on');
+    step=-1; renderHead();
+  }
+  function setStatus(m){ document.getElementById('status').textContent=m; }
+
+  // ---- build grid ----
+  var TRACKS=[['lead',true],['bass',true],['drum',false]];
+  var NOTE_NAMES=SCALES[scaleName].map(function(d,i){return ['A','B','C','D','E','F','G','G#'][i];});
+  var table=document.getElementById('grid');
+  var body=document.createElement('tbody');
+  TRACKS.forEach(function(tk){
+    var tr=document.createElement('tr');
+    var th=document.createElement('th'); th.textContent=tk[0]; tr.appendChild(th);
+    for(var i=0;i<STEPS;i++){
+      var td=document.createElement('td');
+      td.dataset.track=tk[0]; td.dataset.step=i;
+      td.className=(i%4===3)?'b4':'';
+      td.addEventListener('click', onCell);
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  });
+  table.appendChild(body);
+
+  function onCell(e){
+    var td=e.currentTarget;
+    var tk=td.dataset.track, si=+td.dataset.step;
+    if(tk==='drum'){
+      var v=pattern.drum[si];
+      pattern.drum[si]=(v===false)?0:(v===0?1:false);
+    } else {
+      var arr=pattern[tk];
+      var cur=arr[si];
+      var sc=SCALES[scaleName], max=sc.length*2;
+      arr[si]=(cur+1>max)?-1:cur+1;
+    }
+    drawCell(td,tk,si);
+    updateHash();
+  }
+
+  function drawCell(td,tk,si){
+    var v = tk==='drum' ? pattern.drum[si] : pattern[tk][si];
+    if(tk==='drum'){
+      td.className='b4'+(si%4===3?'':'') +(v!==false?' on':'');
+      td.classList.toggle('drum', true);
+      td.textContent = v===0?'K':(v===1?'H':'');
+    } else {
+      td.className='b4'+(si%4===3?'':'') + (v>=0?' on':'');
+      td.classList.toggle(tk, true);
+      td.textContent = v>=0 ? (v%SCALES[scaleName].length) : '';
+    }
+    // fix b4 class
+    td.classList.toggle('b4', si%4===3);
+    if(step===si&&playing) td.classList.add('step');
+  }
+
+  function renderHead(){
+    var cells=table.querySelectorAll('td');
+    cells.forEach(function(td){
+      var si=+td.dataset.step;
+      td.classList.toggle('step', playing && si===step);
+    });
+  }
+
+  // ---- controls ----
+  document.getElementById('play').addEventListener('click', function(){ playing?stop():start(); });
+  document.getElementById('stop').addEventListener('click', stop);
+  document.getElementById('clear').addEventListener('click', function(){
+    pattern.lead.fill(-1); pattern.bass.fill(-1); pattern.drum.fill(false);
+    redraw(); updateHash(); setStatus('pattern cleared');
+  });
+  document.getElementById('rand').addEventListener('click', function(){
+    for(var i=0;i<STEPS;i++){
+      pattern.lead[i]=Math.random()<0.4?Math.floor(Math.random()*7):-1;
+      pattern.bass[i]=Math.random()<0.5?Math.floor(Math.random()*7):-1;
+      pattern.drum[i]=Math.random()<0.5?(Math.random()<0.6?0:1):false;
+    }
+    redraw(); updateHash(); setStatus('randomized — share the link!');
+    setTimeout(function(){setStatus('ready. press ▶ or space.')},3000);
+  });
+  var tempoEl=document.getElementById('tempo');
+  tempoEl.addEventListener('input', function(){
+    tempo=+tempoEl.value;
+    document.getElementById('seqno').textContent=tempo+' bpm';
+  });
+  document.getElementById('scale').addEventListener('click', function(){
+    // minor->major->pent->minor
+    var order=['minor','major','pent'];
+    scaleName=order[(order.indexOf(scaleName)+1)%order.length];
+    this.textContent=scaleName;
+    this.classList.toggle('on', true);
+    // reset pitches beyond range -> just keep, clamp on draw
+    redraw(); updateHash(); setStatus('scale: '+scaleName);
+  });
+  [['n0',16],['n1',8],['n2',4]].forEach(function(b){
+    document.getElementById(b[0]).addEventListener('click', function(){
+      noteDiv=b[1];
+      ['n0','n1','n2'].forEach(function(id){document.getElementById(id).classList.remove('on');});
+      document.getElementById(b[0]).classList.add('on');
+    });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.code==='Space'){ e.preventDefault(); playing?stop():start(); }
+  });
+
+  // ---- URL hash <-> pattern ----
+  function encodePattern(){
+    var lead=[],bass=[],drum=[];
+    for(var i=0;i<STEPS;i++){
+      lead.push(pattern.lead[i]<0?'x':('0123456789abcdef'[pattern.lead[i]]));
+      bass.push(pattern.bass[i]<0?'x':('0123456789abcdef'[pattern.bass[i]]));
+      var d=pattern.drum[i];
+      drum.push(d===false?'x':(d===0?'k':(d===1?'h':'x')));
+    }
+    return 'l='+lead.join('')+'&b='+bass.join('')+'&d='+drum.join('')+'&s='+scaleName+'&t='+tempo;
+  }
+  function decodePattern(hash){
+    var m=hash.replace(/^#/,'').split('&');
+    var map={};
+    m.forEach(function(kv){ var p=kv.split('='); map[p[0]]=decodeURIComponent(p[1]||''); });
+    if(!map.l||!map.b||!map.d) return false;
+    var hex='0123456789abcdef';
+    function dec(s){ var arr=new Array(STEPS).fill(-1); if(!s) return arr;
+      for(var i=0;i<Math.min(STEPS,s.length);i++){ var ch=s[i];
+        if(hex.indexOf(ch)>=0) arr[i]=hex.indexOf(ch); } return arr; }
+    pattern.lead=dec(map.l);
+    pattern.bass=dec(map.b);
+    pattern.drum=new Array(STEPS).fill(false);
+    if(map.d){ for(var i=0;i<Math.min(STEPS,map.d.length);i++){
+      var c=map.d[i]; if(c==='k')pattern.drum[i]=0; else if(c==='h')pattern.drum[i]=1; } }
+    if(map.s&&SCALES[map.s]) scaleName=map.s;
+    if(map.t&&!isNaN(+map.t)){ tempo=Math.max(60,Math.min(220,+map.t)); tempoEl.value=tempo; document.getElementById('seqno').textContent=tempo+' bpm'; }
+    return true;
+  }
+  function updateHash(){
+    try{ history.replaceState(null,'','#'+encodePattern()); }catch(e){}
+  }
+  function redraw(){
+    table.querySelectorAll('td').forEach(function(td){
+      drawCell(td,td.dataset.track,+td.dataset.step);
+    });
+    document.getElementById('scale').textContent=scaleName;
+  }
+
+  // init
+  if(location.hash) decodePattern(location.hash);
+  redraw();
+  updateHash();
+  setStatus('ready. press ▶ or space.');
+})();
+</script>
+</body>
+</html>
