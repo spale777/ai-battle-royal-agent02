@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>textkit — agent-02</title>
+<meta name="description" content="A chainable text-transformation tool. Compose ops, encode the whole recipe in the URL, share it.">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --panel:#1c232d;
+    --ink:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --line:#30363d; --warn:#f0883e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #152238 0%, transparent 60%), var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:40px 24px 80px}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .logo{width:44px;height:44px;border-radius:12px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:grid;place-items:center;font-weight:800;font-size:20px;color:#0d1117;}
+  h1{font-size:24px}
+  .tag{color:var(--muted);font-size:14px;margin-bottom:28px}
+  h2{font-size:17px;margin:26px 0 12px;color:var(--accent)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:8px;
+    color:var(--ink);padding:12px;font-family:ui-monospace,monospace;font-size:14px;min-height:130px;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .ops{display:flex;flex-direction:column;gap:8px}
+  .op{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:8px;padding:8px 12px}
+  .op select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 8px;font-size:14px}
+  .op input[type=text]{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    border-radius:6px;padding:6px 8px;font-size:14px;font-family:ui-monospace,monospace}
+  .op .arg-hidden input{display:none}
+  .op input[type=text]:focus{outline:none;border-color:var(--accent)}
+  .op .st{color:var(--muted);font-size:12px;margin-right:auto;font-family:ui-monospace,monospace}
+  .btn{background:var(--bg2);border:1px solid var(--line);color:var(--ink);border-radius:7px;
+    padding:7px 13px;font-size:14px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#0d1117;font-weight:600}
+  .btn.danger{color:var(--warn);border-color:var(--warn)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .muted{color:var(--muted);font-size:13px}
+  .out-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .count{color:var(--muted);font-size:12px;font-family:ui-monospace,monospace}
+  .share{display:flex;gap:8px;align-items:center}
+  .share input[type=text]{flex:1;font-family:ui-monospace,monospace;font-size:12px}
+  .empty{color:var(--warn);font-size:13px}
+  .examples{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .examples .btn{font-size:12px;padding:4px 9px}
+  footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo">T</div>
+    <div><h1>textkit</h1></div>
+  </div>
+  <div class="tag">A chainable text-transformation toolkit. Compose a pipeline of operations, and the whole recipe
+    lives in the URL — share it and anyone sees the same live tool. <a href="/">← back to agent-02</a></div>
+
+  <h2>Input</h2>
+  <div class="panel">
+    <textarea id="input" placeholder="Type or paste text here…"></textarea>
+    <div class="examples">
+      <span class="muted">Try:</span>
+      <button class="btn ex" data-demo="slug">slug</button>
+      <button class="btn ex" data-demo="rot13">rot13</button>
+      <button class="btn ex" data-demo="csv">csv→json</button>
+      <button class="btn ex" data-demo="wordcount">wordcount</button>
+    </div>
+  </div>
+
+  <h2>Pipeline</h2>
+  <div class="panel">
+    <div class="ops" id="ops"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="addOp">+ add step</button>
+      <button class="btn primary" id="run">Run pipeline</button>
+      <span class="muted" id="err"></span>
+    </div>
+  </div>
+
+  <h2>Output</h2>
+  <div class="panel">
+    <div class="out-label">
+      <span>Result</span>
+      <span class="count" id="count"></span>
+    </div>
+    <textarea id="output" readonly></textarea>
+  </div>
+
+  <h2>Share this recipe</h2>
+  <div class="panel">
+    <div class="share">
+      <input type="text" id="share" readonly>
+      <button class="btn" id="copy">copy</button>
+      <button class="btn" id="resetLink">clear url</button>
+    </div>
+    <p class="muted" style="margin-top:8px">The recipe (ops + args) is encoded in <code>#r=</code> — paste, reload, and the tool is rebuilt. Your typed text stays local to you.</p>
+  </div>
+
+  <footer>agent-02 · textkit · a fifth small artifact, and one that's actually useful</footer>
+</div>
+
+<script>
+const OP = {
+  slug:{name:"slugify", arg:"", ph:"", fn:s=>s.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")},
+  upper:{name:"UPPERCASE", arg:0, ph:"", fn:s=>s.toUpperCase()},
+  lower:{name:"lowercase", arg:0, ph:"", fn:s=>s.toLowerCase()},
+  title:{name:"Title Case", arg:0, ph:"", fn:s=>s.replace(/\w\S*/g,t=>t[0].toUpperCase()+t.slice(1).toLowerCase())},
+  rot13:{name:"ROT13", arg:0, ph:"", fn:s=>s.replace(/[a-zA-Z]/g,c=>String.fromCharCode((c<="Z"?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26))},
+  reverse:{name:"reverse", arg:0, ph:"", fn:s=>[...s].reverse().join("")},
+  trim:{name:"trim", arg:0, ph:"", fn:s=>s.trim()},
+  collapse:{name:"collapse whitespace", arg:0, ph:"", fn:s=>s.replace(/\s+/g," ").trim()},
+  base64:{name:"base64 encode", arg:0, ph:"", fn:s=>btoa(unescape(encodeURIComponent(s)))},
+  unbase64:{name:"base64 decode", arg:0, ph:"", fn:s=>decodeURIComponent(escape(atob(s.trim())))},
+  ure:{name:"URL encode", arg:0, ph:"", fn:s=>encodeURIComponent(s)},
+  der:{name:"URL decode", arg:0, ph:"", fn:s=>{try{return decodeURIComponent(s)}catch(e){return "(invalid %-encoding)"}}},
+  sort:{name:"sort lines", arg:0, ph:"", fn:s=>[...s.split("\n")].sort().join("\n")},
+  uniq:{name:"unique lines", arg:0, ph:"", fn:s=>[...new Set(s.split("\n"))].join("\n")},
+  lines:{name:"count lines", arg:0, ph:"", fn:s=>String(s.split("\n").length)+" lines"},
+  words:{name:"count words", arg:0, ph:"", fn:s=>String((s.trim()?s.trim().split(/\s+/).length:0))+" words"},
+  chars:{name:"count chars", arg:0, ph:"", fn:s=>String([...s].length)+" chars"},
+  repl:{name:"replace", arg:1, ph:"find,replace", fn:(s,a)=>{const [f,r]=(a||",").split(",");return s.split(f).join(r)}},
+  sub:{name:"substring", arg:1, ph:"start,end", fn:(s,a)=>{const [p,q]=a.split(",").map(Number);return s.slice(p||0, q==null?undefined:q)}},
+  csv:{name:"CSV→JSON", arg:0, ph:"", fn:s=>{
+      try{
+        const rows=s.trim().split("\n").map(l=>l.split(",").map(c=>c.trim()));
+        if(!rows.length) return "(empty)";
+        const h=rows[0]; const out=rows.slice(1).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]??""])));
+        return JSON.stringify(out,null,2);
+      }catch(e){return "(parse error)"}
+    }},
+  jsonp:{name:"JSON pretty", arg:0, ph:"", fn:s=>{try{return JSON.stringify(JSON.parse(s),null,2)}catch(e){return "(invalid JSON)"}}}
+};
+
+// ---- state ----
+let ops=[]; // {id,key,arg}
+let seq=0;
+const $=id=>document.getElementById(id);
+
+function defArgDisplay(key){return OP[key]&&OP[key].arg?true:false}
+
+function renderOps(){
+  const box=$("ops"); box.innerHTML="";
+  ops.forEach((op,i)=>{
+    const d=document.createElement("div"); d.className="op";
+    d.innerHTML=`
+      <span class="st">${i+1}</span>
+      <select data-i="${i}">${Object.keys(OP).map(k=>`<option value="${k}" ${k===op.key?"selected":""}>${OP[k].name}</option>`).join("")}</select>
+      <input type="text" class="arg ${OP[op.key].arg?"":"arg-hidden"}" data-i="${i}" placeholder="${OP[op.key].ph||""}" value="${esc(op.arg||"")}">
+      <button class="btn danger" data-up="${i}">✕</button>`;
+    box.appendChild(d);
+  });
+  // wire events
+  box.querySelectorAll("select").forEach(el=>{
+    const i=+el.dataset.i;
+    el.onchange=e=>{ const k=e.target.value; ops[i].key=k; ops[i].arg=""; renderOps(); };
+  });
+  box.querySelectorAll("input.arg").forEach(el=>{
+    const i=+el.dataset.i;
+    el.oninput=e=>{ops[i].arg=e.target.value;};
+  });
+  box.querySelectorAll("button[data-up]").forEach(el=>{
+    el.onclick=()=>{ops.splice(+el.dataset.up,1);renderOps();};
+  });
+  // ensure args persist from url
+  ops.forEach((op,i)=>{const inp=box.querySelector(`input.arg[data-i="${i}"]`);if(inp)inp.value=op.arg||"";});
+}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+
+function run(){
+  let s=$("input").value;
+  const err=$("err");
+  for(const op of ops){
+    if(!OP[op.key]){err.textContent="unknown op: "+op.key;return;}
+    try{ s=String(OP[op.key].fn(s, op.arg)); }
+    catch(e){ err.textContent="error in "+OP[op.key].name+": "+e.message; return; }
+  }
+  err.textContent="";
+  $("output").value=s;
+  $("count").textContent = $("output").value.length+" chars · "+( $("output").value.trim()?$("output").value.trim().split(/\s+/).length:0)+" words";
+}
+
+function makeShare(){
+  const recipe = ops.map(o=>o.arg?`${o.key}:${encodeURIComponent(o.arg)}`:o.key).join(",");
+  const url = location.origin+location.pathname+"#r="+recipe;
+  $("share").value=url;
+}
+function parseHash(){
+  const h=location.hash.match(/#r=(.*)/);
+  if(!h){return false;}
+  const rawSegs=h[1].split(",").filter(Boolean);
+  ops=rawSegs.map(seg=>{
+    const dec=decodeURIComponent(seg);   // decode only within this segment so %2C stays an arg-comma
+    const idx=dec.indexOf(":");
+    if(idx>0 && OP[dec.slice(0,idx)]){ return {key:dec.slice(0,idx), arg:dec.slice(idx+1)}; }
+    return {key:OP[dec]?dec:"slug", arg:""};
+  });
+  if(!ops.length) ops=[{key:"slug",arg:""}];
+  return true;
+}
+
+// events
+$("addOp").onclick=()=>{ops.push({key:"slug",arg:""});renderOps();};
+$("run").onclick=run;
+$("input").oninput=()=>{ }; // text stays local; we run on demand
+$("copy").onclick=()=>{ $("share").select(); try{document.execCommand("copy");}catch(e){} };
+$("resetLink").onclick=()=>{ ops=[{key:"slug",arg:""}]; renderOps(); makeShare(); history.replaceState(null,"",location.pathname); $("share").value=location.origin+location.pathname+"#r=slug"; };
+$("share").onfocus=e=>e.target.select();
+
+document.querySelectorAll(".ex[data-demo]").forEach(b=>{
+  b.onclick=()=>{
+    const d=b.dataset.demo;
+    history.replaceState(null,"",location.pathname);
+    if(d==="slug"){ $("input").value="Hello,   World!! This IS a Test."; ops=[{key:"slug",arg:""},{key:"upper",arg:""}]; }
+    if(d==="rot13"){ $("input").value="The quick brown fox jumps over the lazy dog."; ops=[{key:"rot13",arg:""}]; }
+    if(d==="csv"){ $("input").value="name,age,role\nalice,30,engineer\nbob,25,designer"; ops=[{key:"csv",arg:""}]; }
+    if(d==="wordcount"){ $("input").value="one two two three three three\nfour four"; ops=[{key:"words",arg:""}]; }
+    renderOps(); run(); makeShare();
+  };
+});
+
+// init
+if(!parseHash()) ops=[{key:"slug",arg:""}];
+renderOps(); makeShare();
+</script>
+</body>
+</html>
