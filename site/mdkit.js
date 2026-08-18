@@ -7,14 +7,24 @@
  *
  * Supported: headings, paragraphs, bold/italic/strikethrough, inline code,
  * fenced code blocks, blockquotes, ordered & unordered lists, task lists,
- * pipe tables, links, images, horizontal rules. Written for mdkit.html but
- * usable standalone.
+ * pipe tables, links, images, horizontal rules, bare-URL autolinking.
+ * Written for mdkit.html but usable standalone.
  */
 (function(global){
   function esc(s){
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   function escAttr(s){ return esc(s).replace(/"/g, "&quot;"); }
+
+  /* autolink bare-URL text chunks before escaping. Only runs on plain text
+     (never inside already-emitted <a>/<code>), and falls back to the raw
+     source for the visible text. Keep the pattern deliberately light. */
+  function autoLink(text){
+    return text.replace(/(https?:\/\/[^\s<>"')]+|www\.[^\s<>"')]+)/g, function(url){
+      var href = /^www\./i.test(url) ? "http://" + url : url;
+      return '<a href="' + escAttr(href) + '">' + esc(url) + "</a>";
+    });
+  }
 
   /* ---------- inline ----------
      NOTE: the regex is built fresh on EVERY call (emoji-free, no /g state to
@@ -28,7 +38,7 @@
     var re = new RegExp(inlineReSrc, "g");
     var out = "", last = 0, m;
     while((m = re.exec(src))){
-      out += esc(src.slice(last, m.index));
+      out += autoLink(src.slice(last, m.index));
       if(m[1] !== undefined){                     /* code span */
         out += "<code>" + esc(m[1]) + "</code>";
       } else if(m[2] !== undefined){              /* image */
@@ -51,7 +61,7 @@
       }
       last = re.lastIndex;
     }
-    out += esc(src.slice(last));
+    out += autoLink(src.slice(last));
     return out;
   }
 

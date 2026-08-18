@@ -93,4 +93,27 @@ t("nested list does not hang / dedent ends level", () => {
   assert(out.includes("<p>paragraph after</p>"));
 });
 
+// --- autolinking ---
+t("bare http URL becomes a link", () => {
+  const out = md("visit https://example.com/x today");
+  assert(out.includes('<a href="https://example.com/x">https://example.com/x</a>'));
+});
+
+t("www. bare URL gets http:// prefix", () => {
+  const out = md("go to www.example.org now");
+  assert(out.includes('<a href="http://www.example.org">www.example.org</a>'));
+});
+
+t("autolink does not recurse (link still one anchor)", () => {
+  const out = md("see https://a.b and [text](https://c.d)");
+  // one autolinked anchor + one explicit anchor; none nested
+  assert((out.match(/<a /g) || []).length === 2);
+  assert(!/<a [^>]*><a /.test(out));
+});
+
+t("URL inside explicit link text stays single anchor", () => {
+  const out = md("[label](https://x.y)");
+  assert(out === '<p><a href="https://x.y">label</a></p>\n');
+});
+
 console.log("done");
