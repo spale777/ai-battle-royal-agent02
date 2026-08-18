@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mdkit — write Markdown, see HTML</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c222c; --border:#2d333b;
+    --txt:#e6edf3; --muted:#8b949e; --acc:#58a6ff;
+    --code-bg:#111416;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--txt);min-height:100vh}
+  header{padding:22px 28px;border-bottom:1px solid var(--border);background:var(--panel)}
+  header h1{margin:0;font-size:22px}
+  header h1 code{color:var(--acc);font-weight:600}
+  header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .links{margin-top:10px;font-size:13px}
+  .links a{color:var(--acc);text-decoration:none;margin-right:14px}
+  .links a:hover{text-decoration:underline}
+  main{padding:22px 28px;max-width:1100px;margin:0 auto}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .btn{border:1px solid var(--border);background:var(--panel);color:var(--txt);padding:7px 14px;
+       border-radius:8px;cursor:pointer;font-size:13px}
+  .btn:hover{background:var(--panel2)}
+  .btn.primary{background:#238636;border-color:#2ea043;color:#fff}
+  .note{color:var(--muted);font-size:12px;margin-left:auto}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .col{display:flex;flex-direction:column;min-width:0}
+  .col label{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+  .col label .k{color:var(--acc)}
+  #src{width:100%;height:420px;background:var(--panel);border:1px solid var(--border);
+       border-radius:8px;color:var(--txt);padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+       font-size:13px;resize:vertical;line-height:1.6}
+  #src:focus{outline:none;border-color:var(--acc)}
+  .prev{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 16px;
+        height:420px;overflow:auto;font-size:14px;line-height:1.6;min-width:0;word-wrap:break-word}
+  .prev h1{font-size:22px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:0 0 10px}
+  .prev h2{font-size:18px;margin:16px 0 8px}
+  .prev h3{font-size:15px;margin:12px 0 6px}
+  .prev h4{font-size:13px;margin:10px 0 5px}
+  .prev p{margin:0 0 10px}
+  .prev a{color:var(--acc)}
+  .prev code{background:var(--code-bg);border:1px solid var(--border);border-radius:4px;
+             padding:1px 4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .prev pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:12px;
+            overflow:auto;margin:0 0 12px}
+  .prev pre code{background:none;border:none;padding:0}
+  .prev blockquote{border-left:3px solid var(--acc);margin:0 0 12px;padding:4px 14px;color:var(--muted);
+                   background:var(--panel2);border-radius:0 8px 8px 0}
+  .prev blockquote p{margin:0}
+  .prev ul,.prev ol{margin:0 0 12px;padding-left:24px}
+  .prev li{margin:2px 0}
+  .prev img{max-width:100%}
+  .prev hr{border:none;border-top:1px solid var(--border);margin:16px 0}
+  .prev del{color:var(--muted)}
+  .meta{color:var(--muted);font-size:12px;margin:10px 0 0}
+  .meta b{color:var(--txt)}
+  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.6;border-top:1px solid var(--border);padding-top:14px}
+  .empty{color:var(--muted);font-style:italic}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>mdkit</h1>
+  <p>Write Markdown on the left, see rendered HTML live on the right. The note <em>is</em> the link: your text is encoded in the address bar, so a document is shareable just by copying the URL.</p>
+  <div class="links">
+    <a href="/">‹ home</a>
+    <a href="/textkit.html">textkit</a>
+    <a href="/diff.html">diffkit</a>
+    <a href="#" id="shareLink">copy share link</a>
+  </div>
+</header>
+<main>
+  <div class="bar">
+    <button class="btn" id="loadBtn">load example</button>
+    <button class="btn" id="clearBtn">clear</button>
+    <button class="btn primary" id="resetBtn">reset to example</button>
+    <span class="note">runs entirely in your browser — nothing is sent anywhere</span>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <label><span>Markdown</span></label>
+      <textarea id="src" spellcheck="false" placeholder="# Write markdown here…&#10;&#10;It renders live on the right."></textarea>
+    </div>
+    <div class="col">
+      <label><span>Preview <span class="k">(live)</span></span></label>
+      <div class="prev" id="out"><div class="empty">Type something…</div></div>
+    </div>
+  </div>
+
+  <div class="meta">
+    rendered in <span><b id="ms">0</b> ms</span> · <span id="pTag">0</span> blocks
+  </div>
+
+  <div class="foot">
+    A small, dependency-free Markdown renderer written by hand for this page
+    (<code>mdkit.js</code> — about 150 lines). Supports: headings, paragraphs,
+    <strong>bold</strong>, <em>italic</em>, <del>strikethrough</del>, <code>inline code</code>,
+    fenced code blocks, blockquotes, ordered &amp; unordered lists, links and images.
+    The source is encoded into the URL (<code>#m=…</code>); that encoding is what makes
+    a document shareable as a single link. All parsing happens client-side.
+    Long notes make long links, so this is best for short-to-medium snippets.
+  </div>
+</main>
+
+<script src="/mdkit.js"></script>
+<script>
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+var SRC = $("src"), OUT = $("out");
+
+var EX = [
+  "# mdkit",
+  "",
+  "A tiny **Markdown** renderer that runs entirely in your browser. This whole note is",
+  "encoded into the address bar — copy the URL and the document comes with it.",
+  "",
+  "## What it supports",
+  "",
+  "- headings (all six levels)",
+  "- **bold**, *italic*, ~~strikethrough~~, and `inline code`",
+  "- fenced code blocks:",
+  "",
+  "```js",
+  "function greet(name){",
+  "  return `Hello, ${name}!`;",
+  "}",
+  "```",
+  "",
+  "- blockquotes",
+  "",
+  "> The note *is* the link.",
+  "",
+  "- links like [this one](https://example.com)",
+  "- ordered lists:",
+  "",
+  "1. type on the left",
+  "2. watch it render live",
+  "3. copy the URL to share",
+  "",
+  "## Why",
+  "",
+  "My other artifacts (textkit, diffkit, generator, fractal, melody, shuffle) all share",
+  "one rule: state lives in the URL, so anything you make is a link you can hand someone.",
+  "A markdown note that ships itself as its own URL fits right in."
+].join("\n");
+
+function render(){
+  var t0 = performance.now();
+  var md = SRC.value;
+  if(md.trim() === ""){
+    OUT.innerHTML = '<div class="empty">Type some markdown to see it render&hellip;</div>';
+    $("ms").textContent = "0";
+    $("pTag").textContent = "0";
+    return;
+  }
+  OUT.innerHTML = window.mdkit.render(md);
+  var blocks = OUT.querySelectorAll("h1,h2,h3,h4,h5,h6,p,pre,blockquote,ul,ol,hr");
+  $("ms").textContent = Math.max(1, Math.round(performance.now() - t0));
+  $("pTag").textContent = blocks.length;
+}
+
+function updateURL(){
+  var hash = "#m=" + encodeURIComponent(SRC.value);
+  try { history.replaceState(null, "", hash); } catch(e){}
+}
+function readURL(){
+  var h = location.hash || "";
+  if(!h) return false;
+  var params = new URLSearchParams(h.substring(1));
+  var m = params.get("m");
+  if(m !== null){ SRC.value = m; return true; }
+  return false;
+}
+
+$("loadBtn").addEventListener("click", function(){ SRC.value = EX; render(); });
+$("clearBtn").addEventListener("click", function(){ SRC.value = ""; render(); });
+$("resetBtn").addEventListener("click", function(){ SRC.value = EX; render(); });
+$("shareLink").addEventListener("click", function(e){
+  e.preventDefault(); updateURL();
+  var url = location.origin + location.pathname + location.hash;
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ flash("link copied"); }); }
+  else { window.prompt("Copy this link:", url); }
+});
+function flash(msg){ var o=$("shareLink").textContent; $("shareLink").textContent=msg; setTimeout(function(){ $("shareLink").textContent=o; },1200); }
+SRC.addEventListener("input", function(){ updateURL(); render(); });
+
+if(!readURL()){ SRC.value = EX; }
+render();
+</script>
+</body>
+</html>
