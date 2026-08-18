@@ -27,6 +27,7 @@
   .btn:hover{background:var(--panel2)}
   .btn.primary{background:#238636;border-color:#2ea043;color:#fff}
   .note{color:var(--muted);font-size:12px;margin-left:auto}
+  .bar .spacer{flex:1}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .col{display:flex;flex-direction:column;min-width:0}
   .col label{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
@@ -53,6 +54,13 @@
   .prev blockquote p{margin:0}
   .prev ul,.prev ol{margin:0 0 12px;padding-left:24px}
   .prev li{margin:2px 0}
+  .prev li.task{list-style:none;margin-left:-18px}
+  .prev li.task input{margin-right:8px;accent-color:var(--acc);vertical-align:-1px}
+  .prev li.task.done span{color:var(--muted);text-decoration:line-through}
+  .prev table{border-collapse:collapse;margin:0 0 12px;width:100%;font-size:13.5px}
+  .prev th,.prev td{border:1px solid var(--border);padding:6px 10px;text-align:left}
+  .prev th{background:var(--panel2);font-weight:600}
+  .prev tr:nth-child(even) td{background:var(--panel2)}
   .prev img{max-width:100%}
   .prev hr{border:none;border-top:1px solid var(--border);margin:16px 0}
   .prev del{color:var(--muted)}
@@ -79,6 +87,9 @@
     <button class="btn" id="loadBtn">load example</button>
     <button class="btn" id="clearBtn">clear</button>
     <button class="btn primary" id="resetBtn">reset to example</button>
+    <span class="spacer"></span>
+    <button class="btn" id="copyHtmlBtn">copy HTML</button>
+    <button class="btn" id="copyMdBtn">copy note</button>
     <span class="note">runs entirely in your browser — nothing is sent anywhere</span>
   </div>
 
@@ -99,9 +110,10 @@
 
   <div class="foot">
     A small, dependency-free Markdown renderer written by hand for this page
-    (<code>mdkit.js</code> — about 150 lines). Supports: headings, paragraphs,
+    (<code>mdkit.js</code> — about 180 lines). Supports: headings, paragraphs,
     <strong>bold</strong>, <em>italic</em>, <del>strikethrough</del>, <code>inline code</code>,
-    fenced code blocks, blockquotes, ordered &amp; unordered lists, links and images.
+    fenced code blocks, blockquotes, ordered &amp; unordered lists, <strong>task lists</strong>,
+    <strong>pipe tables</strong> (with alignment) and images.
     The source is encoded into the URL (<code>#m=…</code>); that encoding is what makes
     a document shareable as a single link. All parsing happens client-side.
     Long notes make long links, so this is best for short-to-medium snippets.
@@ -124,6 +136,19 @@ var EX = [
   "",
   "- headings (all six levels)",
   "- **bold**, *italic*, ~~strikethrough~~, and `inline code`",
+  "- task lists:",
+  "",
+  "  - [x] write a tiny markdown renderer",
+  "  - [x] encode the note into the URL",
+  "  - [ ] add pipe tables",
+  "",
+  "- pipe tables with alignment:",
+  "",
+  "  | Syntax | Cost | Polished |",
+  "  | :--- | ---: | :---: |",
+  "  | bold | 1 | yes |",
+  "  | tables | 2 | now yes |",
+  "",
   "- fenced code blocks:",
   "",
   "```js",
@@ -139,9 +164,9 @@ var EX = [
   "- links like [this one](https://example.com)",
   "- ordered lists:",
   "",
-  "1. type on the left",
-  "2. watch it render live",
-  "3. copy the URL to share",
+  "  1. type on the left",
+  "  2. watch it render live",
+  "  3. copy the URL to share",
   "",
   "## Why",
   "",
@@ -177,6 +202,20 @@ function readURL(){
   if(m !== null){ SRC.value = m; return true; }
   return false;
 }
+
+function flash(el, msg){ var o=el.textContent; el.textContent=msg; setTimeout(function(){ el.textContent=o; },1200); }
+
+function copyText(text, btn, ok){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ flash(btn, ok); });
+  } else {
+    var ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta);
+    ta.select(); try{ document.execCommand("copy"); flash(btn, ok); }catch(e){ window.prompt("Copy this:", text); }
+    document.body.removeChild(ta);
+  }
+}
+$("copyHtmlBtn").addEventListener("click", function(){ copyText(OUT.innerHTML, this, "HTML copied"); });
+$("copyMdBtn").addEventListener("click", function(){ copyText(SRC.value, this, "note copied"); });
 
 $("loadBtn").addEventListener("click", function(){ SRC.value = EX; render(); });
 $("clearBtn").addEventListener("click", function(){ SRC.value = ""; render(); });

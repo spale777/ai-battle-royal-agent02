@@ -6,8 +6,9 @@
  *   node:    module.exports = { render: mdToHtml }
  *
  * Supported: headings, paragraphs, bold/italic/strikethrough, inline code,
- * fenced code blocks, blockquotes, ordered & unordered lists, links, images,
- * horizontal rules. Written for mdkit.html but usable standalone.
+ * fenced code blocks, blockquotes, ordered & unordered lists, task lists,
+ * pipe tables, links, images, horizontal rules. Written for mdkit.html but
+ * usable standalone.
  */
 (function(global){
   function esc(s){
@@ -61,6 +62,43 @@
   var UL_RE = /^\s*[-*+]\s+/;
   var OL_RE = /^\s*\d+[.)]\s+/;
   var QUOTE_RE = /^\s*>/;
+  /* task-list bullet:  - [ ] / - [x] / - [X]  */
+  var TASK_RE = /^(\s*[-*+]\s+)\[([ xX])\]\s+(.*)$/;
+  var TASK_OL_RE = /^(\s*\d+[.)]\s+)\[([ xX])\]\s+(.*)$/;
+  /* pipe table:  | a | b |  then  | - | -: |  then rows */
+  var ROW_RE = /^\s*\|.*\|\s*$/;
+  /* is `line` a valid separator row ("| - | :-- | -: | :--: |", trailing pipe optional)? */
+  function sepOk(line){
+    var s = line.trim().replace(/^\|/, "");
+    var trailing = /\|\s*$/.test(s);
+    s = s.replace(/\|\s*$/, "");
+    if(s === "") return trailing;            /* "| |" */
+    return s.split("|").every(function(c){ return /^\s*:?-+:?\s*$/.test(c); });
+  }
+  /* true when line j is a table header (pipe row) followed by a valid separator */
+  function isTableStart(lines, n, j){
+    return j + 1 < n && ROW_RE.test(lines[j]) && sepOk(lines[j + 1]);
+  }
+  function splitRow(line){
+    var cells = line.trim().split("|");
+    if(cells[0] === "") cells.shift();
+    if(cells[cells.length - 1] === "") cells.pop();
+    return cells.map(function(c){ return c.trim(); });
+  }
+  /* parse a pipe-table body starting at line i. Returns {table, next} or null. */
+  function tableAt(lines, n, i){
+    if(!isTableStart(lines, n, i)) return null;
+    var heads = splitRow(lines[i]);
+    if(!heads.length) return null;
+    var aligns = splitRow(lines[i + 1]).slice(0, heads.length).map(function(c){
+      var t = c.trim();
+      var l = /^:/.test(t), r = /:$/.test(t);
+      return l && r ? "center" : l ? "left" : r ? "right" : "";
+    });
+    var rows = [], k = i + 2;
+    while(k < n && ROW_RE.test(lines[k])){ rows.push(splitRow(lines[k])); k++; }
+    return { table: { heads: heads, aligns: aligns, rows: rows }, next: k };
+  }
 
   function mdToHtml(src){
     var lines = String(src).replace(/\r\n?/g, "\n").split("\n");
@@ -98,17 +136,29 @@
       }
 
       /* list */
+      var task = TASK_RE.exec(line);
+      if(!task) task = TASK_OL_RE.exec(line);
       var isUl = UL_RE.test(line), isOl = OL_RE.test(line);
-      if(isUl || isOl){
-        var type = isOl ? "ol" : "ul", items = [], j = i;
+      if(isUl || isOl || task){
+        var type = task ? "ul" : (isOl ? "ol" : "ul");
+        var items = [], j = i, taskList = !!task;
         while(j < n){
           var bl = lines[j];
-          if(type === "ol" && OL_RE.test(bl)){ items.push(bl.replace(OL_RE, "")); j++; }
-          else if(type === "ul" && UL_RE.test(bl)){ items.push(bl.replace(UL_RE, "")); j++; }
+          var tm = TASK_OL_RE.exec(bl); if(!tm) tm = TASK_RE.exec(bl);
+          if(tm){ items.push({ t: "task", done: /[xX]/.test(tm[2]), txt: tm[3] }); j++; }
+          else if(!taskList && type === "ol" && OL_RE.test(bl)){ items.push({ t: "item", txt: bl.replace(OL_RE, "") }); j++; }
+          else if(!taskList && type === "ul" && UL_RE.test(bl)){ items.push({ t: "item", txt: bl.replace(UL_RE, "") }); j++; }
           else break;
         }
-        blocks.push({ t: "list", type: type, items: items });
+        blocks.push({ t: "list", type: type, items: items, tasks: taskList });
         i = j; continue;
+      }
+
+      /* pipe table */
+      var tb = tableAt(lines, n, i);
+      if(tb){
+        blocks.push({ t: "table", table: tb.table });
+        i = tb.next; continue;
       }
 
       /* paragraph */
@@ -116,7 +166,8 @@
       while(j < n){
         var pl = lines[j];
         if(/^\s*$/.test(pl) || FENCE_RE.test(pl) || QUOTE_RE.test(pl) ||
-           UL_RE.test(pl) || OL_RE.test(pl) || H_RE.test(pl) || HR_RE.test(pl)) break;
+           UL_RE.test(pl) || OL_RE.test(pl) || H_RE.test(pl) || HR_RE.test(pl) ||
+           TASK_RE.test(pl) || TASK_OL_RE.test(pl) || isTableStart(lines, n, j)) break;
         para.push(pl); j++;
       }
       blocks.push({ t: "p", txt: para.join("\n") });
@@ -137,10 +188,37 @@
           html += "<blockquote><p>" + inline(b.txt) + "</p></blockquote>\n";
           break;
         case "list": {
-          var tag = b.type, itemsHtml = b.items.map(function(it){
-            return "<li>" + inline(it) + "</li>";
-          }).join("");
+          var tag = b.type, itemsHtml;
+          if(b.tasks){
+            itemsHtml = b.items.map(function(it){
+              return "<li class=\"task" + (it.done ? " done" : "") + "\"><input type=\"checkbox\"" +
+                (it.done ? " checked" : "") + " disabled> <span>" + inline(it.txt) + "</span></li>";
+            }).join("");
+          } else {
+            itemsHtml = b.items.map(function(it){
+              return "<li>" + inline(it.txt) + "</li>";
+            }).join("");
+          }
           html += "<" + tag + ">" + itemsHtml + "</" + tag + ">\n";
+          break;
+        }
+        case "table": {
+          var t = b.table;
+          html += "<table>\n<thead><tr>";
+          t.heads.forEach(function(h, i){
+            html += "<th" + (t.aligns[i] ? " style=\"text-align:" + t.aligns[i] + "\"" : "") + ">" +
+                    inline(h) + "</th>";
+          });
+          html += "</tr></thead>\n<tbody>";
+          t.rows.forEach(function(r){
+            html += "<tr>";
+            t.heads.forEach(function(_, i){
+              html += "<td" + (t.aligns[i] ? " style=\"text-align:" + t.aligns[i] + "\"" : "") + ">" +
+                      inline(r[i] !== undefined ? r[i] : "") + "</td>";
+            });
+            html += "</tr>";
+          });
+          html += "</tbody></table>\n";
           break;
         }
         default:
