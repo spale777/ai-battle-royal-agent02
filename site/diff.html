@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>diffkit — compare two texts</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c222c; --border:#2d333b;
+    --txt:#e6edf3; --muted:#8b949e; --acc:#58a6ff;
+    --add:#1f6f2f; --addbg:#123218; --del:#a33636; --delbg:#3a1111; --sub:#a0711f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--txt);min-height:100vh}
+  header{padding:22px 28px;border-bottom:1px solid var(--border);background:var(--panel)}
+  header h1{margin:0;font-size:22px}
+  header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .links{margin-top:10px;font-size:13px}
+  .links a{color:var(--acc);text-decoration:none;margin-right:14px}
+  .links a:hover{text-decoration:underline}
+  main{padding:22px 28px;max-width:1100px;margin:0 auto}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg button{border:none;background:var(--panel);color:var(--muted);padding:7px 14px;cursor:pointer;font-size:13px}
+  .seg button.on{background:var(--acc);color:#0b1220;font-weight:600}
+  .seg button:not(.on):hover{background:var(--panel2)}
+  .btn{border:1px solid var(--border);background:var(--panel);color:var(--txt);padding:7px 14px;
+       border-radius:8px;cursor:pointer;font-size:13px}
+  .btn:hover{background:var(--panel2)}
+  .btn.primary{background:#238636;border-color:#2ea043;color:#fff}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .col{display:flex;flex-direction:column}
+  .col label{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+  .col textarea{width:100%;height:250px;background:var(--panel);border:1px solid var(--border);
+       border-radius:8px;color:var(--txt);padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+       font-size:13px;resize:vertical;line-height:1.5}
+  .col textarea:focus{outline:none;border-color:var(--acc)}
+  .stats-row{display:flex;gap:16px;color:var(--muted);font-size:12px;margin:10px 0 4px}
+  .stats-row b{color:var(--txt)}
+  h2{font-size:15px;margin:20px 0 8px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+  .diff{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 0;
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;
+        max-height:480px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+  .dl{display:flex}
+  .gn{width:40px;flex:none;color:#484f58;text-align:right;padding-right:10px;user-select:none;font-size:12px}
+  .dl.add{background:var(--addbg)}
+  .dl.add .gn{color:#3fb950}
+  .dl.del{background:var(--delbg)}
+  .dl.del .gn{color:#f85149}
+  .dl.sub{background:#2d2410}
+  .dl.sub .gn{color:#d29922}
+  .tx{flex:1;padding:0 12px}
+  .word{background:var(--add);color:#fff;border-radius:3px;padding:0 1px}
+  .del .word{background:var(--del);color:#fff}
+  .sub .word{background:var(--sub);color:#fff}
+  .where{color:var(--muted);font-style:italic}
+  .empty{color:var(--muted);padding:14px;font-style:italic}
+  .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.6;border-top:1px solid var(--border);padding-top:14px}
+  @media(max-width:720px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>diffkit</h1>
+  <p>Compare two pieces of text — live char / word / line diff. Input stays in your browser; the comparison itself is encoded in the URL, so share a render link.</p>
+  <div class="links">
+    <a href="/">‹ home</a>
+    <a href="/textkit.html">textkit</a>
+    <a href="#" id="shareLink">copy share link</a>
+  </div>
+</header>
+<main>
+  <div class="bar">
+    <div class="seg" id="modeSeg">
+      <button data-m="line" class="on">line</button>
+      <button data-m="word">word</button>
+      <button data-m="char">char</button>
+    </div>
+    <button class="btn" id="swapBtn" title="swap A and B">⇄ swap</button>
+    <button class="btn" id="clearBtn">clear</button>
+    <button class="btn primary" id="resetBtn">reset to examples</button>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <label><span>A (old) <button class="btn" id="loadA" style="padding:2px 8px;font-size:11px">load example</button></span></label>
+      <textarea id="a" spellcheck="false" placeholder="paste original text here…"></textarea>
+    </div>
+    <div class="col">
+      <label><span>B (new) <button class="btn" id="loadB" style="padding:2px 8px;font-size:11px">load example</button></span></label>
+      <textarea id="b" spellcheck="false" placeholder="paste edited text here…"></textarea>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <span>mode: <b id="mStat">line</b></span>
+    <span>added: <b id="sAdd">0</b></span>
+    <span>removed: <b id="sDel">0</b></span>
+    <span>changed: <b id="sSub">0</b></span>
+  </div>
+
+  <h2>Diff</h2>
+  <div class="diff" id="out"><div class="empty">Type or paste text in both boxes to see the diff.</div></div>
+
+  <div class="foot">
+    All computation happens in your browser — nothing is sent to any server. The current input is encoded
+    into the URL (<code>#a=…&#38;b=…</code>), so you can capture or share a specific comparison.
+    Encoding caveat: long inputs make long links (URL length limits apply), so this is best for shortish snippets.
+  </div>
+</main>
+
+<script>
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+var A = $("a"), B = $("b"), OUT = $("out");
+var mode = "line";
+
+/* ---------- core diff (LCS over tokens) ---------- */
+function lcsTable(s1, s2){
+  var n = s1.length, m = s2.length;
+  var dp = new Array(n+1);
+  for(var i=0;i<=n;i++){ dp[i] = new Array(m+1); dp[i][m]=0; }
+  for(var j=m-1;j>=0;j--) dp[n][j]=0;
+  for(i=n-1;i>=0;i--){
+    for(j=m-1;j>=0;j--){
+      dp[i][j] = (s1[i]===s2[j]) ? 1+dp[i+1][j+1] : Math.max(dp[i+1][j], dp[i][j+1]);
+    }
+  }
+  return dp;
+}
+/* Returns list of ops: {t:'eq'|'del'|'add', v:token} in A,B order */
+function diffTokens(s1, s2){
+  var dp = lcsTable(s1,s2), i=0, j=0, out=[];
+  while(i<s1.length && j<s2.length){
+    if(s1[i]===s2[j]){ out.push({t:'eq',v:s1[i]}); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ out.push({t:'del',v:s1[i]}); i++; }
+    else { out.push({t:'add',v:s2[j]}); j++; }
+  }
+  while(i<s1.length){ out.push({t:'del',v:s1[i]}); i++; }
+  while(j<s2.length){ out.push({t:'add',v:s2[j]}); j++; }
+  return out;
+}
+
+/* Pair neighbouring del/add runs into "changed" runs for nicer display.
+   Greedy: if a del run and following add run are both length 1, mark changed.
+   Otherwise keep as remove+add. */
+function groupOps(ops){
+  var res = [], i = 0;
+  var sq = function(t,x){ return {t:t, items:[x]}; };
+  while(i < ops.length){
+    if(ops[i].t !== 'del'){ res.push(sq(ops[i].t, ops[i].v)); i++; continue; }
+    // collect the del run
+    var dels = [ops[i].v]; var j = i+1;
+    while(j < ops.length && ops[j].t === 'del'){ dels.push(ops[j].v); j++; }
+    // collect the following add run
+    var adds = [], k = j;
+    while(k < ops.length && ops[k].t === 'add'){ adds.push(ops[k].v); k++; }
+    if(dels.length === adds.length && dels.length === 1){
+      res.push({t:'sub', items:[dels[0]], items2:[adds[0]]});
+    } else {
+      res.push({t:'del', items:dels});
+      if(adds.length){ res.push({t:'add', items:adds}); }
+    }
+    i = (adds.length ? k : j);
+  }
+  return res;
+}
+
+/* ---------- tokenizers ---------- */
+function tokLine(s){
+  if(s === "") return [];
+  var arr = s.split("\n");
+  return arr;
+}
+function tokWord(s){
+  // whitespace is significant; keep spacing tokens unstyled so words cluster
+  var re = /(\s+)/g;
+  return s.split(re).filter(function(x){ return x.length>0 && !(/^\s+$/.test(x)); });
+}
+function tokChar(s){
+  if(s === "") return [];
+  return s.split("");
+}
+
+/* ---------- word-level inline highlight of a changed group ---------- */
+function highlightWords(g){
+  // g.items = old tokens, g.items2 = new tokens (for sub)
+  if(g.t === 'eq'){ return esc(join(g.items)); }
+  if(g.t === 'add'){ return g.items.map(function(t){ return hw(t,'add'); }).join(''); }
+  if(g.t === 'del'){ return g.items.map(function(t){ return hw(t,'del'); }).join(''); }
+  // sub: show old then new
+  var a = g.items.map(function(t){ return hw(t,'del'); }).join('');
+  var b = g.items2.map(function(t){ return hw(t,'add'); }).join('');
+  return a + '\u2192' + b;
+}
+function hw(t, cls){ return '<span class="word">'+esc(t)+'</span>'; }
+function join(items){ return items.join(""); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ---------- rendering ---------- */
+function render(){
+  var a = A.value, b = B.value;
+  if(a === "" && b === ""){ OUT.innerHTML = '<div class="empty">Type or paste text in both boxes to see the diff.</div>'; $("sAdd").textContent=0;$("sDel").textContent=0;$("sSub").textContent=0; return; }
+  var s1, s2;
+  if(mode === 'line'){ s1=tokLine(a); s2=tokLine(b); }
+  else if(mode === 'word'){ s1=tokWord(a); s2=tokWord(b); }
+  else { s1=tokChar(a); s2=tokChar(b); }
+  var ops = diffTokens(s1,s2);
+  var groups = groupOps(ops);
+  var nAdd=0,nDel=0,nSub=0;
+  var html = "";
+
+  if(mode === 'line'){
+    // Show as rows with original line numbers
+    var lineA=1, lineB=1;
+    groups.forEach(function(g){
+      if(g.t === 'eq'){
+        g.items.forEach(function(it){
+          html += '<div class="dl addTmp"><span class="gn">'+lineA+'</span><span class="gn" style="border-right:1px solid var(--border)">'+lineB+'</span><span class="tx">'+esc(it)+'</span></div>';
+          lineA++; lineB++;
+        });
+      } else if(g.t === 'del'){
+        g.items.forEach(function(it){ html += '<div class="dl del"><span class="gn">'+lineA+'</span><span class="gn"> </span><span class="tx">'+esc(it)+'</span></div>'; lineA++; nDel++; });
+      } else if(g.t === 'add'){
+        g.items.forEach(function(it){ html += '<div class="dl add"><span class="gn"> </span><span class="gn">'+lineB+'</span><span class="tx">'+esc(it)+'</span></div>'; lineB++; nAdd++; });
+      } else { // sub: show old line(s) as del, new as add, but pair into one changed row when single pair
+        g.items.forEach(function(it){ html += '<div class="dl sub"><span class="gn">'+lineA+'</span><span class="gn"> </span><span class="tx">'+hw(it,'del')+'</span></div>'; lineA++; });
+        g.items2.forEach(function(it){ html += '<div class="dl sub"><span class="gn"> </span><span class="gn">'+lineB+'</span><span class="tx">'+hw(it,'add')+'</span></div>'; lineB++; });
+        nSub += Math.max(g.items.length, g.items2.length);
+      }
+    });
+  } else {
+    // word/char: contiguous single stream, inline highlighting
+    groups.forEach(function(g){
+      if(g.t === 'eq'){ html += join(g.items.map(esc)); }
+      else if(g.t === 'add'){ html += g.items.map(function(t){return hw(t,'add');}).join(''); nAdd += g.items.length; }
+      else if(g.t === 'del'){ html += g.items.map(function(t){return hw(t,'del');}).join(''); nDel += g.items.length; }
+      else { html += g.items.map(function(t){return hw(t,'del');}).join(''); html += '\u2192'; html += g.items2.map(function(t){return hw(t,'add');}).join(''); nSub++; }
+    });
+    html = '<div class="dl"><span class="tx">'+html+'</span></div>';
+  }
+  OUT.innerHTML = html;
+  $("sAdd").textContent = nAdd;
+  $("sDel").textContent = nDel;
+  $("sSub").textContent = nSub;
+}
+
+/* ---------- shareable URL state ---------- */
+function updateURL(){
+  var p = { a: A.value, b: B.value, m: mode };
+  var hash = '#a=' + encodeURIComponent(p.a) + '&b=' + encodeURIComponent(p.b) + '&m=' + p.m;
+  try { history.replaceState(null, '', hash); } catch(e){}
+}
+function readURL(){
+  var h = location.hash || "";
+  if(!h) return false;
+  var params = new URLSearchParams(h.substring(1));
+  var a = params.get('a'), b = params.get('b'), m = params.get('m');
+  if(a !== null){ A.value = a; }
+  if(b !== null){ B.value = b; }
+  if(m === 'line' || m === 'word' || m === 'char'){ setMode(m); }
+  return a !== null || b !== null;
+}
+
+/* ---------- examples ---------- */
+var EX = {
+  a: ["The quick brown fox jumps over the lazy dog.",
+      "Diff is a classic comparison algorithm.",
+      "It finds the longest common subsequence.",
+      "A common subsequence is shared by both inputs.",
+      ""].join("\n"),
+  b: ["The quick brown fox leaps over the lazy cat.",
+      "Diff is a classic comparison algorithm.",
+      "It finds the longest common subsequence.",
+      "A common subsequence is shared by inputs.",
+      "Bonus: it also powers version control.",
+      ""].join("\n")
+};
+
+/* ---------- wiring ---------- */
+function setMode(m){ mode = m; document.querySelectorAll('#modeSeg button').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); }); $('mStat').textContent = m; render(); }
+document.querySelectorAll('#modeSeg button').forEach(function(b){
+  b.addEventListener('click', function(){ setMode(b.dataset.m); });
+});
+$('swapBtn').addEventListener('click', function(){ var t=A.value; A.value=B.value; B.value=t; render(); });
+$('clearBtn').addEventListener('click', function(){ A.value=''; B.value=''; render(); });
+$('resetBtn').addEventListener('click', function(){ A.value=EX.a; B.value=EX.b; setMode('line'); render(); });
+$('loadA').addEventListener('click', function(e){ e.preventDefault(); A.value=EX.a; render(); });
+$('loadB').addEventListener('click', function(e){ e.preventDefault(); B.value=EX.b; render(); });
+$('shareLink').addEventListener('click', function(e){
+  e.preventDefault(); updateURL();
+  var url = location.origin + location.pathname + location.hash;
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ flash('link copied'); }); }
+  else { window.prompt('Copy this link:', url); }
+});
+function flash(msg){ var old=$('shareLink').textContent; $('shareLink').textContent=msg; setTimeout(function(){ $('shareLink').textContent=old; }, 1200); }
+['a','b'].forEach(function(id){ $(id).addEventListener('input', function(){ updateURL(); render(); }); });
+
+readURL();
+if(A.value === "" && B.value === ""){ A.value = EX.a; B.value = EX.b; }
+render();
+</script>
+</body>
+</html>
