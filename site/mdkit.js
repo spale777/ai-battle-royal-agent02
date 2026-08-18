@@ -100,6 +100,58 @@
     return { table: { heads: heads, aligns: aligns, rows: rows }, next: k };
   }
 
+  /* ---------- nested lists ----------
+     Recursive descent: parseList consumes a run of list lines whose marker sits
+     at a given column; a *deeper*-indented bullet directly after an item becomes
+     a sublist of that item. Returns [items, nextLineIndex]. Every iteration
+     advances at least one line and indent strictly increases down the stack, so
+     this terminates. Dedent past the base column (or a non-list line) ends the
+     level. */
+  function listLine(line){
+    var m = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(line);
+    if(!m) return null;
+    return { col: m[1].length, num: /^\d/.test(m[2]), rest: m[3] };
+  }
+  function parseList(lines, n, i, indent){
+    var items = [];
+    while(i < n){
+      var ll = listLine(lines[i]);
+      if(!ll || ll.col !== indent) break;
+      var task = /^\[([ xX])\]\s+/.exec(ll.rest);
+      var it = { num: ll.num, task: !!task,
+                 done: task ? /[xX]/.test(task[1]) : false,
+                 txt: task ? ll.rest.slice(task[0].length) : ll.rest,
+                 sub: null };
+      items.push(it);
+      i++;
+      if(i < n){
+        var sub = listLine(lines[i]);
+        if(sub && sub.col > indent){
+          var r = parseList(lines, n, i, sub.col);
+          it.sub = r[0];
+          i = r[1];
+        }
+      }
+    }
+    return [items, i];
+  }
+  function renderList(items){
+    var tag = items[0].num ? "ol" : "ul";
+    var html = "<" + tag + ">";
+    items.forEach(function(it){
+      if(it.task){
+        html += '<li class="task' + (it.done ? " done" : "") + '"><input type="checkbox"' +
+                (it.done ? " checked" : "") + " disabled> <span>" + inline(it.txt) + "</span>";
+      } else {
+        html += "<li>" + inline(it.txt);
+      }
+      if(it.sub && it.sub.length) html += renderList(it.sub);
+      html += "</li>";
+    });
+    html += "</" + tag + ">";
+    return html;
+  }
+
   function mdToHtml(src){
     var lines = String(src).replace(/\r\n?/g, "\n").split("\n");
     var blocks = [], n = lines.length, i = 0;
@@ -135,23 +187,12 @@
         i = j; continue;
       }
 
-      /* list */
-      var task = TASK_RE.exec(line);
-      if(!task) task = TASK_OL_RE.exec(line);
-      var isUl = UL_RE.test(line), isOl = OL_RE.test(line);
-      if(isUl || isOl || task){
-        var type = task ? "ul" : (isOl ? "ol" : "ul");
-        var items = [], j = i, taskList = !!task;
-        while(j < n){
-          var bl = lines[j];
-          var tm = TASK_OL_RE.exec(bl); if(!tm) tm = TASK_RE.exec(bl);
-          if(tm){ items.push({ t: "task", done: /[xX]/.test(tm[2]), txt: tm[3] }); j++; }
-          else if(!taskList && type === "ol" && OL_RE.test(bl)){ items.push({ t: "item", txt: bl.replace(OL_RE, "") }); j++; }
-          else if(!taskList && type === "ul" && UL_RE.test(bl)){ items.push({ t: "item", txt: bl.replace(UL_RE, "") }); j++; }
-          else break;
-        }
-        blocks.push({ t: "list", type: type, items: items, tasks: taskList });
-        i = j; continue;
+      /* list (incl. nested) */
+      var ll0 = listLine(line);
+      if(ll0){
+        var res = parseList(lines, n, i, ll0.col);
+        blocks.push({ t: "list", items: res[0] });
+        i = res[1]; continue;
       }
 
       /* pipe table */
@@ -187,21 +228,9 @@
         case "quote":
           html += "<blockquote><p>" + inline(b.txt) + "</p></blockquote>\n";
           break;
-        case "list": {
-          var tag = b.type, itemsHtml;
-          if(b.tasks){
-            itemsHtml = b.items.map(function(it){
-              return "<li class=\"task" + (it.done ? " done" : "") + "\"><input type=\"checkbox\"" +
-                (it.done ? " checked" : "") + " disabled> <span>" + inline(it.txt) + "</span></li>";
-            }).join("");
-          } else {
-            itemsHtml = b.items.map(function(it){
-              return "<li>" + inline(it.txt) + "</li>";
-            }).join("");
-          }
-          html += "<" + tag + ">" + itemsHtml + "</" + tag + ">\n";
+        case "list":
+          html += renderList(b.items) + "\n";
           break;
-        }
         case "table": {
           var t = b.table;
           html += "<table>\n<thead><tr>";

@@ -112,8 +112,8 @@
     A small, dependency-free Markdown renderer written by hand for this page
     (<code>mdkit.js</code> — about 180 lines). Supports: headings, paragraphs,
     <strong>bold</strong>, <em>italic</em>, <del>strikethrough</del>, <code>inline code</code>,
-    fenced code blocks, blockquotes, ordered &amp; unordered lists, <strong>task lists</strong>,
-    <strong>pipe tables</strong> (with alignment) and images.
+    fenced code blocks, blockquotes, ordered &amp; unordered lists, <strong>nested lists</strong>,
+    <strong>task lists</strong>, <strong>pipe tables</strong> (with alignment) and images.
     The source is encoded into the URL (<code>#m=…</code>); that encoding is what makes
     a document shareable as a single link. All parsing happens client-side.
     Long notes make long links, so this is best for short-to-medium snippets.
@@ -167,6 +167,13 @@ var EX = [
   "  1. type on the left",
   "  2. watch it render live",
   "  3. copy the URL to share",
+  "",
+  "- nested lists:",
+  "",
+  "  - a bullet",
+  "    - with a deeper bullet",
+  "      * and a grandchild",
+  "  - back to the top level",
   "",
   "## Why",
   "",

@@ -55,11 +55,42 @@ t("mixed doc renders (no hang)", () => {
   assert(out.includes("checked"));
 });
 
-// --- tables must NOT swallow trailing plain text line into a spurious cell
+// --- inline dash line stays a paragraph
 t("inline dash line stays a paragraph", () => {
   const out = md("hello\n----");
   // "----" alone should be an <hr>; "hello" a paragraph
   assert(out.includes("<p>hello</p>"));
+});
+
+// --- nested lists ---
+t("nested unordered list renders <ul> inside <li>", () => {
+  const out = md("- root\n  - child");
+  assert(out.includes("<li>root<ul><li>child</li></ul></li>"));
+});
+
+t("nested list with ordered sublist and grandchild", () => {
+  const out = md("a\n- root\n  - child b\n    * grand\n- after");
+  assert(out.includes("<li>root<ul><li>child b<ul><li>grand</li></ul></li></ul></li>"));
+  assert(out.includes("<li>after</li>"));
+});
+
+t("nested list inside tasks", () => {
+  const out = md("- [x] top\n  - [ ] sub");
+  assert(out.includes('checked'));
+  assert((out.match(/<input/g)||[]).length === 2);
+});
+
+t("nested list does not hang / dedent ends level", () => {
+  const src = [
+    "- a",
+    "  - b",
+    "- c",
+    "",
+    "paragraph after"
+  ].join("\n");
+  const out = md(src);
+  assert(out.includes("<li>c</li>"));
+  assert(out.includes("<p>paragraph after</p>"));
 });
 
 console.log("done");
