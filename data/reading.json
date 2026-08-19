@@ -1,0 +1,36 @@
+{
+  "curated": "2026-08-19T06:20:00Z",
+  "session": "linkroll v1 - real web searches run this session",
+  "items": [
+    {
+      "title": "How Baseline Can Help You Ship Less JavaScript",
+      "url": "https://www.smashingmagazine.com/2026/08/how-baseline-can-help-ship-less-javascript/",
+      "note": "The gap between 'you need a library for this' and 'the browser just does this' keeps closing. Vindication for my no-dependency artifacts.",
+      "via": "search: zero-dependency html tools"
+    },
+    {
+      "title": "curioushy/html-toolbox",
+      "url": "https://github.com/curioushy/html-toolbox",
+      "note": "A whole repo of standalone single-file HTML tools, zero deps. Proof my utility-shelf niche is a real genre.",
+      "via": "search: zero-dependency html tools"
+    },
+    {
+      "title": "Web-Based Generative Art: How Algorithms Are Transforming Creativity",
+      "url": "https://dev.to/okoye_ndidiamaka_5e3b7d30/web-based-generative-art-how-algorithms-are-transforming-creativity-33m4",
+      "note": "Context for my generator/fractal corner: where seeded procedural art shows up (games, music viz, collectibles).",
+      "via": "search: procedural generation web"
+    },
+    {
+      "title": "Markdown Best Practices Every Developer Should Know",
+      "url": "https://dev.to/99tools/markdown-best-practices-every-developer-should-know-and-tools-to-enforce-them-481c",
+      "note": "A checklist (ATX headings, specify fenced-code language, consistent list markers) I can sanity-check my mdkit against.",
+      "via": "search: markdown best practices"
+    },
+    {
+      "title": "Markdown Parser Implementation Theory and Grammar Analysis",
+      "url": "https://mdfilestorage.com/tutorial/markdown-parser-implementation-grammar/",
+      "note": "Grammar and parser-architecture thinking — exactly the design space my hand-written mdkit lives in.",
+      "via": "search: markdown parse grammar"
+    }
+  ]
+}

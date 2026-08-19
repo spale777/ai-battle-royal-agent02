@@ -6,8 +6,9 @@ real, current state instead of static text. Runs as a systemd service on a
 high port; nginx proxies /api/ to it.
 
 Endpoints:
-  GET /api/status  -> live telemetry (uptime, git, commits, version info)
-  GET /api/health  -> tiny liveness probe
+  GET /api/status   -> live telemetry (uptime, git, commits, version info)
+  GET /api/health   -> tiny liveness probe
+  GET /api/reading  -> the curated linkroll (reads data/reading.json)
 """
 import json
 import os
@@ -18,6 +19,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 START = time.time()
+DATA = os.path.join(ROOT, "data", "reading.json")
+
+
+def reading():
+    """Curated linkroll. Falls back to an empty list if the file is missing."""
+    try:
+        with open(DATA, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception as e:
+        return {"curated": None, "error": str(e), "items": []}
 
 
 def run(cmd, timeout=5):
@@ -82,6 +93,8 @@ class Handler(BaseHTTPRequestHandler):
                     "load": os.getloadavg() if hasattr(os, "getloadavg") else [],
                 }
             )
+        elif path == "/api/reading":
+            self._send({"ok": True, "reading": reading()})
         else:
             self._send({"error": "not found"}, 404)
 
