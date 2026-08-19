@@ -29,6 +29,8 @@
        border-radius:8px;cursor:pointer;font-size:13px}
   .btn:hover{background:var(--panel2)}
   .btn.primary{background:#238636;border-color:#2ea043;color:#fff}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+  .chk input{accent-color:var(--acc)}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .col{display:flex;flex-direction:column}
   .col label{font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
@@ -41,7 +43,7 @@
   h2{font-size:15px;margin:20px 0 8px;color:var(--muted);font-weight:600;letter-spacing:.3px}
   .diff{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 0;
         font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.6;
-        max-height:480px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+        max-height:520px;overflow:auto;white-space:pre-wrap;word-break:break-word}
   .dl{display:flex}
   .gn{width:40px;flex:none;color:#484f58;text-align:right;padding-right:10px;user-select:none;font-size:12px}
   .dl.add{background:var(--addbg)}
@@ -58,6 +60,14 @@
   .empty{color:var(--muted);padding:14px;font-style:italic}
   .foot{color:var(--muted);font-size:12px;margin-top:18px;line-height:1.6;border-top:1px solid var(--border);padding-top:14px}
   @media(max-width:720px){.cols{grid-template-columns:1fr}}
+  /* side-by-side layout */
+  .diff.split{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:0;overflow:auto}
+  .scol{min-width:0}
+  .scol:first-child{border-right:1px solid var(--border)}
+  .shead{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+         padding:8px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel)}
+  .dl.stackrow .gn.gap{border-right:1px solid var(--border)}
+  @media(max-width:720px){.diff.split{grid-template-columns:1fr}.scol:first-child{border-right:none;border-bottom:1px solid var(--border)}}
 </style>
 </head>
 <body>
@@ -67,6 +77,7 @@
   <div class="links">
     <a href="/">‹ home</a>
     <a href="/textkit.html">textkit</a>
+    <a href="/mdkit.html">mdkit</a>
     <a href="#" id="shareLink">copy share link</a>
   </div>
 </header>
@@ -77,6 +88,13 @@
       <button data-m="word">word</button>
       <button data-m="char">char</button>
     </div>
+    <div class="seg" id="layoutSeg">
+      <button data-l="stack" class="on">stacked</button>
+      <button data-l="split">side-by-side</button>
+    </div>
+    <label class="chk" title="line mode: compare lines ignoring all whitespace, but still show the originals">
+      <input type="checkbox" id="ignoreWS"> ignore whitespace
+    </label>
     <button class="btn" id="swapBtn" title="swap A and B">⇄ swap</button>
     <button class="btn" id="clearBtn">clear</button>
     <button class="btn primary" id="resetBtn">reset to examples</button>
@@ -95,6 +113,7 @@
 
   <div class="stats-row">
     <span>mode: <b id="mStat">line</b></span>
+    <span>layout: <b id="lStat">stacked</b></span>
     <span>added: <b id="sAdd">0</b></span>
     <span>removed: <b id="sDel">0</b></span>
     <span>changed: <b id="sSub">0</b></span>
@@ -105,7 +124,9 @@
 
   <div class="foot">
     All computation happens in your browser — nothing is sent to any server. The current input is encoded
-    into the URL (<code>#a=…&#38;b=…</code>), so you can capture or share a specific comparison.
+    into the URL (<code>#a=…&#38;b=…&#38;m=…&#38;l=…&#38;w=…</code>), so you can capture or share a specific
+    comparison. <em>ignore whitespace</em> only affects line mode (it compares lines with all whitespace
+    removed, but still shows the originals). <em>side-by-side</em> splits the line diff into two columns.
     Encoding caveat: long inputs make long links (URL length limits apply), so this is best for shortish snippets.
   </div>
 </main>
@@ -114,7 +135,7 @@
 "use strict";
 var $ = function(id){ return document.getElementById(id); };
 var A = $("a"), B = $("b"), OUT = $("out");
-var mode = "line";
+var mode = "line", layout = "stack", ignoreWS = false;
 
 /* ---------- core diff (LCS over tokens) ---------- */
 function lcsTable(s1, s2){
@@ -129,11 +150,14 @@ function lcsTable(s1, s2){
   }
   return dp;
 }
-/* Returns list of ops: {t:'eq'|'del'|'add', v:token} in A,B order */
-function diffTokens(s1, s2){
-  var dp = lcsTable(s1,s2), i=0, j=0, out=[];
+/* Returns list of ops: {t:'eq'|'del'|'add', v:token} in A,B order.
+   Comparison keys (k1,k2) may differ from displayed values (s1,s2), used for
+   e.g. ignore-whitespace: compare stripped, display original. */
+function diffTokens(s1, s2, k1, k2){
+  k1 = k1 || s1; k2 = k2 || s2;
+  var dp = lcsTable(k1,k2), i=0, j=0, out=[];
   while(i<s1.length && j<s2.length){
-    if(s1[i]===s2[j]){ out.push({t:'eq',v:s1[i]}); i++; j++; }
+    if(k1[i]===k2[j]){ out.push({t:'eq',v:s1[i]}); i++; j++; }
     else if(dp[i+1][j] >= dp[i][j+1]){ out.push({t:'del',v:s1[i]}); i++; }
     else { out.push({t:'add',v:s2[j]}); j++; }
   }
@@ -170,11 +194,9 @@ function groupOps(ops){
 /* ---------- tokenizers ---------- */
 function tokLine(s){
   if(s === "") return [];
-  var arr = s.split("\n");
-  return arr;
+  return s.split("\n");
 }
 function tokWord(s){
-  // whitespace is significant; keep spacing tokens unstyled so words cluster
   var re = /(\s+)/g;
   return s.split(re).filter(function(x){ return x.length>0 && !(/^\s+$/.test(x)); });
 }
@@ -185,11 +207,9 @@ function tokChar(s){
 
 /* ---------- word-level inline highlight of a changed group ---------- */
 function highlightWords(g){
-  // g.items = old tokens, g.items2 = new tokens (for sub)
   if(g.t === 'eq'){ return esc(join(g.items)); }
   if(g.t === 'add'){ return g.items.map(function(t){ return hw(t,'add'); }).join(''); }
   if(g.t === 'del'){ return g.items.map(function(t){ return hw(t,'del'); }).join(''); }
-  // sub: show old then new
   var a = g.items.map(function(t){ return hw(t,'del'); }).join('');
   var b = g.items2.map(function(t){ return hw(t,'add'); }).join('');
   return a + '\u2192' + b;
@@ -198,40 +218,28 @@ function hw(t, cls){ return '<span class="word">'+esc(t)+'</span>'; }
 function join(items){ return items.join(""); }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* ---------- rendering ---------- */
-function render(){
-  var a = A.value, b = B.value;
-  if(a === "" && b === ""){ OUT.innerHTML = '<div class="empty">Type or paste text in both boxes to see the diff.</div>'; $("sAdd").textContent=0;$("sDel").textContent=0;$("sSub").textContent=0; return; }
-  var s1, s2;
-  if(mode === 'line'){ s1=tokLine(a); s2=tokLine(b); }
-  else if(mode === 'word'){ s1=tokWord(a); s2=tokWord(b); }
-  else { s1=tokChar(a); s2=tokChar(b); }
-  var ops = diffTokens(s1,s2);
-  var groups = groupOps(ops);
-  var nAdd=0,nDel=0,nSub=0;
-  var html = "";
-
+/* ---------- render: stacked (original) ---------- */
+function renderStacked(groups){
+  var html = "", nAdd=0,nDel=0,nSub=0;
   if(mode === 'line'){
-    // Show as rows with original line numbers
     var lineA=1, lineB=1;
     groups.forEach(function(g){
       if(g.t === 'eq'){
         g.items.forEach(function(it){
-          html += '<div class="dl addTmp"><span class="gn">'+lineA+'</span><span class="gn" style="border-right:1px solid var(--border)">'+lineB+'</span><span class="tx">'+esc(it)+'</span></div>';
+          html += '<div class="dl"><span class="gn">'+lineA+'</span><span class="gn" style="border-right:1px solid var(--border)">'+lineB+'</span><span class="tx">'+esc(it)+'</span></div>';
           lineA++; lineB++;
         });
       } else if(g.t === 'del'){
         g.items.forEach(function(it){ html += '<div class="dl del"><span class="gn">'+lineA+'</span><span class="gn"> </span><span class="tx">'+esc(it)+'</span></div>'; lineA++; nDel++; });
       } else if(g.t === 'add'){
         g.items.forEach(function(it){ html += '<div class="dl add"><span class="gn"> </span><span class="gn">'+lineB+'</span><span class="tx">'+esc(it)+'</span></div>'; lineB++; nAdd++; });
-      } else { // sub: show old line(s) as del, new as add, but pair into one changed row when single pair
+      } else {
         g.items.forEach(function(it){ html += '<div class="dl sub"><span class="gn">'+lineA+'</span><span class="gn"> </span><span class="tx">'+hw(it,'del')+'</span></div>'; lineA++; });
         g.items2.forEach(function(it){ html += '<div class="dl sub"><span class="gn"> </span><span class="gn">'+lineB+'</span><span class="tx">'+hw(it,'add')+'</span></div>'; lineB++; });
         nSub += Math.max(g.items.length, g.items2.length);
       }
     });
   } else {
-    // word/char: contiguous single stream, inline highlighting
     groups.forEach(function(g){
       if(g.t === 'eq'){ html += join(g.items.map(esc)); }
       else if(g.t === 'add'){ html += g.items.map(function(t){return hw(t,'add');}).join(''); nAdd += g.items.length; }
@@ -240,26 +248,79 @@ function render(){
     });
     html = '<div class="dl"><span class="tx">'+html+'</span></div>';
   }
-  OUT.innerHTML = html;
-  $("sAdd").textContent = nAdd;
-  $("sDel").textContent = nDel;
-  $("sSub").textContent = nSub;
+  $("sAdd").textContent = nAdd; $("sDel").textContent = nDel; $("sSub").textContent = nSub;
+  return html;
+}
+
+/* ---------- render: side-by-side (line mode only) ---------- */
+function renderSplit(groups){
+  // rows: {la, atx, lb, btx, cls} where a side may be null
+  var rows = [], lineA=1, lineB=1, nAdd=0,nDel=0,nSub=0;
+  groups.forEach(function(g){
+    if(g.t === 'eq'){
+      g.items.forEach(function(it){ rows.push({la:lineA, atx:it, lb:lineB, btx:it, cls:'eq'}); lineA++; lineB++; });
+    } else if(g.t === 'del'){
+      g.items.forEach(function(it){ rows.push({la:lineA, atx:it, lb:null, btx:null, cls:'del'}); lineA++; nDel++; });
+    } else if(g.t === 'add'){
+      g.items.forEach(function(it){ rows.push({la:null, atx:null, lb:lineB, btx:it, cls:'add'}); lineB++; nAdd++; });
+    } else { // sub pairs, align old on A / new on B as best we can
+      var max = Math.max(g.items.length, g.items2.length);
+      for(var i=0;i<max;i++){
+        var a = g.items[i], bb = g.items2[i];
+        var la = (a!==undefined) ? lineA++ : null;
+        var lb = (bb!==undefined) ? lineB++ : null;
+        rows.push({la:la, atx:(a!==undefined?a:null), lb:lb, btx:(bb!==undefined?bb:null), cls:'sub'});
+      }
+      nSub += max;
+    }
+  });
+  var aHtml = '', bHtml = '';
+  rows.forEach(function(r){
+    aHtml += '<div class="dl '+r.cls+'"><span class="gn">'+(r.la!=null?r.la:'')+'</span><span class="tx">'+(r.atx!=null?esc(r.atx):'')+'</span></div>';
+    bHtml += '<div class="dl '+r.cls+'"><span class="gn">'+(r.lb!=null?r.lb:'')+'</span><span class="tx">'+(r.btx!=null?esc(r.btx):'')+'</span></div>';
+  });
+  $("sAdd").textContent = nAdd; $("sDel").textContent = nDel; $("sSub").textContent = nSub;
+  return '<div class="scol"><div class="shead">A · old</div>'+aHtml+'</div>'+
+         '<div class="scol"><div class="shead">B · new</div>'+bHtml+'</div>';
+}
+
+/* ---------- main render ---------- */
+function render(){
+  var a = A.value, b = B.value;
+  if(a === "" && b === ""){ OUT.innerHTML = '<div class="empty">Type or paste text in both boxes to see the diff.</div>'; $("sAdd").textContent=0;$("sDel").textContent=0;$("sSub").textContent=0; return; }
+  var s1, s2, k1, k2;
+  if(mode === 'line'){
+    s1=tokLine(a); s2=tokLine(b);
+    if(ignoreWS){ k1 = s1.map(function(x){ return x.replace(/\s+/g,''); }); k2 = s2.map(function(x){ return x.replace(/\s+/g,''); }); }
+  } else if(mode === 'word'){ s1=tokWord(a); s2=tokWord(b); }
+  else { s1=tokChar(a); s2=tokChar(b); }
+  var ops = diffTokens(s1, s2, k1, k2);
+  var groups = groupOps(ops);
+  if(mode === 'line' && layout === 'split'){
+    OUT.className = 'diff split';
+    OUT.innerHTML = renderSplit(groups);
+  } else {
+    OUT.className = 'diff';
+    OUT.innerHTML = renderStacked(groups);
+  }
 }
 
 /* ---------- shareable URL state ---------- */
 function updateURL(){
-  var p = { a: A.value, b: B.value, m: mode };
-  var hash = '#a=' + encodeURIComponent(p.a) + '&b=' + encodeURIComponent(p.b) + '&m=' + p.m;
+  var p = { a: A.value, b: B.value, m: mode, l: layout, w: ignoreWS ? 1 : 0 };
+  var hash = '#a=' + encodeURIComponent(p.a) + '&b=' + encodeURIComponent(p.b) + '&m=' + p.m + '&l=' + p.l + '&w=' + p.w;
   try { history.replaceState(null, '', hash); } catch(e){}
 }
 function readURL(){
   var h = location.hash || "";
   if(!h) return false;
   var params = new URLSearchParams(h.substring(1));
-  var a = params.get('a'), b = params.get('b'), m = params.get('m');
+  var a = params.get('a'), b = params.get('b'), m = params.get('m'), l = params.get('l'), w = params.get('w');
   if(a !== null){ A.value = a; }
   if(b !== null){ B.value = b; }
-  if(m === 'line' || m === 'word' || m === 'char'){ setMode(m); }
+  if(m === 'line' || m === 'word' || m === 'char'){ setMode(m, true); }
+  if(l === 'stack' || l === 'split'){ setLayout(l, true); }
+  if(w === '1'){ setIgnoreWS(true, true); }
   return a !== null || b !== null;
 }
 
@@ -269,6 +330,7 @@ var EX = {
       "Diff is a classic comparison algorithm.",
       "It finds the longest common subsequence.",
       "A common subsequence is shared by both inputs.",
+      "This line only exists in A.",
       ""].join("\n"),
   b: ["The quick brown fox leaps over the lazy cat.",
       "Diff is a classic comparison algorithm.",
@@ -279,15 +341,18 @@ var EX = {
 };
 
 /* ---------- wiring ---------- */
-function setMode(m){ mode = m; document.querySelectorAll('#modeSeg button').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); }); $('mStat').textContent = m; render(); }
-document.querySelectorAll('#modeSeg button').forEach(function(b){
-  b.addEventListener('click', function(){ setMode(b.dataset.m); });
-});
-$('swapBtn').addEventListener('click', function(){ var t=A.value; A.value=B.value; B.value=t; render(); });
-$('clearBtn').addEventListener('click', function(){ A.value=''; B.value=''; render(); });
-$('resetBtn').addEventListener('click', function(){ A.value=EX.a; B.value=EX.b; setMode('line'); render(); });
-$('loadA').addEventListener('click', function(e){ e.preventDefault(); A.value=EX.a; render(); });
-$('loadB').addEventListener('click', function(e){ e.preventDefault(); B.value=EX.b; render(); });
+function setMode(m, silent){ mode = m; document.querySelectorAll('#modeSeg button').forEach(function(b){ b.classList.toggle('on', b.dataset.m===m); }); $('mStat').textContent = m; if(!silent){ updateURL(); render(); } }
+function setLayout(l, silent){ layout = l; document.querySelectorAll('#layoutSeg button').forEach(function(b){ b.classList.toggle('on', b.dataset.l===l); }); $('lStat').textContent = (l==='split'?'side-by-side':'stacked'); if(!silent){ updateURL(); render(); } }
+function setIgnoreWS(v, silent){ ignoreWS = v; $('ignoreWS').checked = v; if(!silent){ updateURL(); render(); } }
+
+document.querySelectorAll('#modeSeg button').forEach(function(b){ b.addEventListener('click', function(){ setMode(b.dataset.m); }); });
+document.querySelectorAll('#layoutSeg button').forEach(function(b){ b.addEventListener('click', function(){ setLayout(b.dataset.l); }); });
+$('ignoreWS').addEventListener('change', function(){ setIgnoreWS(this.checked); });
+$('swapBtn').addEventListener('click', function(){ var t=A.value; A.value=B.value; B.value=t; updateURL(); render(); });
+$('clearBtn').addEventListener('click', function(){ A.value=''; B.value=''; updateURL(); render(); });
+$('resetBtn').addEventListener('click', function(){ A.value=EX.a; B.value=EX.b; setMode('line'); setLayout('stack'); setIgnoreWS(false); updateURL(); render(); });
+$('loadA').addEventListener('click', function(e){ e.preventDefault(); A.value=EX.a; updateURL(); render(); });
+$('loadB').addEventListener('click', function(e){ e.preventDefault(); B.value=EX.b; updateURL(); render(); });
 $('shareLink').addEventListener('click', function(e){
   e.preventDefault(); updateURL();
   var url = location.origin + location.pathname + location.hash;
@@ -300,6 +365,8 @@ function flash(msg){ var old=$('shareLink').textContent; $('shareLink').textCont
 readURL();
 if(A.value === "" && B.value === ""){ A.value = EX.a; B.value = EX.b; }
 render();
+// react to shareable-link navigation in the same tab (a fresh hash on this page)
+window.addEventListener("hashchange", function(){ readURL(); updateURL(); render(); });
 </script>
 </body>
 </html>
