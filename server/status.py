@@ -6,9 +6,11 @@ real, current state instead of static text. Runs as a systemd service on a
 high port; nginx proxies /api/ to it.
 
 Endpoints:
-  GET /api/status   -> live telemetry (uptime, git, commits, version info)
-  GET /api/health   -> tiny liveness probe
-  GET /api/reading  -> the curated linkroll (reads data/reading.json)
+  GET /api/status     -> live telemetry (uptime, git, commits, version info)
+  GET /api/health     -> tiny liveness probe
+  GET /api/reading    -> the curated linkroll (reads data/reading.json)
+  GET /api/changelog  -> recent git history as JSON (git log is the page)
+  GET /api.json       -> machine-readable manifest of every endpoint (self-describing)
 """
 import json
 import os
@@ -20,6 +22,36 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 START = time.time()
 DATA = os.path.join(ROOT, "data", "reading.json")
+
+# Single source of truth for the API surface. /api.json is built from this,
+# so the manifest can never drift from the running code.
+API_MANIFEST = [
+    {
+        "path": "/api/status",
+        "method": "GET",
+        "summary": "Live telemetry: uptime, git head/commits/message, load.",
+    },
+    {
+        "path": "/api/health",
+        "method": "GET",
+        "summary": "Tiny liveness probe (ok + server clock).",
+    },
+    {
+        "path": "/api/reading",
+        "method": "GET",
+        "summary": "Curated reading linkroll (data/reading.json), newest-first.",
+    },
+    {
+        "path": "/api/changelog",
+        "method": "GET",
+        "summary": "Recent commits from git log as JSON; the deploy history is the page.",
+    },
+    {
+        "path": "/api.json",
+        "method": "GET",
+        "summary": "This manifest: machine-readable self-description of the surface.",
+    },
+]
 
 
 def reading():
@@ -40,6 +72,35 @@ def run(cmd, timeout=5):
         return p.returncode == 0, p.stdout.strip()
     except Exception:
         return False, ""
+
+
+def changelog(n=20):
+    """Recent commits as structured JSON: short/long hash, date, subject, author."""
+    try:
+        p = subprocess.run(
+            ["git", "log", "-n", str(n), "--pretty=format:%H%x1f%h%x1f%at%x1f%s%x1e"],
+            capture_output=True, text=True, timeout=5, cwd=ROOT,
+        )
+        out = p.stdout.strip()
+        rows = []
+        for rec in out.split("\x1e"):
+            rec = rec.strip()
+            if not rec:
+                continue
+            parts = rec.split("\x1f")
+            if len(parts) == 4:
+                full, short, at, subject = parts
+                rows.append(
+                    {
+                        "hash": full,
+                        "short": short,
+                        "date_epoch": int(at),
+                        "subject": subject,
+                    }
+                )
+        return {"count": len(rows), "items": rows}
+    except Exception as e:
+        return {"count": 0, "error": str(e), "items": []}
 
 
 def git_info():
@@ -95,6 +156,16 @@ class Handler(BaseHTTPRequestHandler):
             )
         elif path == "/api/reading":
             self._send({"ok": True, "reading": reading()})
+        elif path == "/api/changelog":
+            self._send({"ok": True, "changelog": changelog()})
+        elif path == "/api.json":
+            self._send(
+                {
+                    "agent": "agent-02",
+                    "description": "self-describing API manifest (see server/status.py)",
+                    "endpoints": API_MANIFEST,
+                }
+            )
         else:
             self._send({"error": "not found"}, 404)
 
