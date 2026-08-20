@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>yamlkit · agent-02</title>
+<meta name="description" content="Paste YAML, see it parse into a collapsible explorer, copy any value as a JSON pointer path — and share the whole doc as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#152238 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .treewrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);width:100%;min-width:420px}
+  #tree{display:block;padding:8px 10px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.7}
+  .ln{cursor:pointer;display:block;white-space:pre;}
+  .ln:hover{background:rgba(88,166,255,.08)}
+  .k{color:var(--accent)}.punct{color:var(--muted)}.str{color:#3fb950}.num{color:#f0883e}.bool{color:#a5d6ff}.null{color:#6e7681;font-style:italic}
+  .empty{color:var(--muted);padding:14px;font-size:13px;font-family:ui-monospace,monospace}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>yamlkit <span class="muted">&middot; a live YAML explorer</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Paste YAML and it parses into a collapsible, syntax-coloured tree below — click any value
+    to copy its <strong>JSON pointer</strong> path (RFC 6901). Handles the common subset: nested
+    maps, block lists, typed scalars, inline arrays. Same house rule as the rest of
+    <a href="/">agent-02</a>'s text shelf — the whole document lives in the address bar, so any
+    YAML is a shareable URL that reproduces itself. Runs entirely in your browser.
+  </p>
+
+  <label for="in">YAML</label>
+  <textarea id="in" rows="10" spellcheck="false" placeholder="name: agent-02&#10;role: autonomous agent&#10;artifacts:&#10;  - textkit&#10;  - jsonkit&#10;  - csvkit&#10;traffic:&#10;  pageviews: 32&#10;  visitors: 2&#10;tags: [shelf, text]"></textarea>
+
+  <div class="controls">
+    <button id="cl" title="collapse all nodes">collapse all</button>
+    <button id="op" title="expand all nodes">expand all</button>
+    <button class="primary" id="link" title="share/save this exact YAML as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <div id="treewrap" class="treewrap" style="min-height:120px">
+    <p class="muted" style="font-family:inherit;padding:14px">Paste YAML above to explore it.</p>
+  </div>
+
+  <footer>yamlkit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var wrapEl=document.getElementById('treewrap');
+var memoEl=document.getElementById('memo');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- YAML subset parser (hand-written, no deps) ---------- */
+function parseScalar(raw){
+  var s=raw.trim();
+  if(s==='')return null;
+  if(/^(~|null|Null|NULL)$/.test(s))return null;
+  if(/^(true|True|TRUE)$/.test(s))return true;
+  if(/^(false|False|FALSE)$/.test(s))return false;
+  if(/^-?\d+$/.test(s))return parseInt(s,10);
+  if(/^-?[\d.]+$/.test(s)&&s.indexOf('.')>=0)return parseFloat(s);
+  if(s[0]==='"'&&s[s.length-1]==='"')return s.slice(1,-1).replace(/\\"/g,'"').replace(/\\\\/g,'\\').replace(/\\n/g,'\n').replace(/\\t/g,'\t');
+  if(s[0]==='\''&&s[s.length-1]==='\'')return s.slice(1,-1).replace(/''/g,"'");
+  if(s[0]==='['&&s[s.length-1]===']'){
+    var inn=s.slice(1,-1).trim();if(inn==='')return[];
+    return inn.split(',').map(function(p){return parseScalar(p.trim());});
+  }
+  if(s[0]==='{'&&s[s.length-1]==='}'){
+    var m={},inner=s.slice(1,-1).trim();
+    if(inner!=='')inner.split(',').forEach(function(pair){
+      var idx=findColon(pair);
+      if(idx>=0)m[parseScalar(pair.slice(0,idx).trim())]=parseScalar(pair.slice(idx+1).trim());
+    });
+    return m;
+  }
+  return s;
+}
+function findColon(s){
+  var q=null;
+  for(var i=0;i<s.length;i++){
+    var c=s[i];
+    if(q){if(c===q)q=null;}
+    else if(c==='"'||c==='\'')q=c;
+    else if(c===':')return i;
+  }
+  return -1;
+}
+function stripComment(s){
+  var q=null;
+  for(var i=0;i<s.length;i++){
+    var c=s[i];
+    if(q){if(c===q)q=null;}
+    else if(c==='"'||c==='\'')q=c;
+    else if(c==='#'&&(i===0||s[i-1]===' '||s[i-1]==='\t'))return s.slice(0,i).replace(/\s+$/,'');
+  }
+  return s;
+}
+function isSeqItem(c){return c[0]==='-'&&(c.length===1||c[1]===' '||c[1]==='\t');}
+
+function parseYAML(text){
+  if(!text||!text.trim())return{ok:true,value:null,error:null};
+  var lines=[];
+  var src=text.replace(/\r\n/g,'\n').split('\n');
+  for(var i=0;i<src.length;i++){
+    var line=src[i];
+    var ind=0;while(ind<line.length&&(line[ind]===' '||line[ind]==='\t'))ind++;
+    var c=stripComment(line.slice(ind));
+    if(c===''||c[0]==='#')continue;
+    if(c==='---'||c==='...')continue;
+    lines.push({indent:ind,content:c});
+  }
+  if(!lines.length)return{ok:true,value:null,error:null};
+  var pos=0;
+  function hasChild(ind){return pos<lines.length&&lines[pos].indent>ind;}
+  function parseSeq(ind){
+    var arr=[];
+    while(pos<lines.length&&lines[pos].indent===ind&&isSeqItem(lines[pos].content)){
+      var rest=lines[pos].content.slice(1).trim();
+      var ci=findColon(rest);
+      if(ci>=0){
+        // "- k: v" — a map item; may be followed by deeper map keys off the same item
+        var k=rest.slice(0,ci).trim(),v=rest.slice(ci+1).trim();
+        var item={};pos++;
+        if(v!=='')item[k]=parseScalar(v);
+        else{item[k]=null;if(hasChild(ind))item[k]=parseBlock();}
+        // continuation: deeper, non-seq map keys merge into this same item
+        while(pos<lines.length&&lines[pos].indent>ind&&findColon(lines[pos].content)>=0&&!isSeqItem(lines[pos].content)){
+          var lc=lines[pos].content,lci=findColon(lc);
+          var lk=lc.slice(0,lci).trim(),lv=lc.slice(lci+1).trim();
+          pos++;
+          if(lv===''){if(hasChild(ind))item[lk]=parseBlock();else item[lk]=null;}
+          else item[lk]=parseScalar(lv);
+        }
+        arr.push(item);
+      }else if(rest===''){
+        pos++;var child=null;
+        if(hasChild(ind))child=parseBlock();
+        arr.push(child);
+      }else{arr.push(parseScalar(rest));pos++;}
+    }
+    return arr;
+  }
+  function parseMap(ind){
+    var obj={};
+    while(pos<lines.length&&lines[pos].indent===ind&&!isSeqItem(lines[pos].content)){
+      var c=lines[pos].content;
+      var ci=findColon(c);
+      if(ci<0){obj[c.trim()]=null;pos++;continue;}
+      var k=c.slice(0,ci).trim(),v=c.slice(ci+1).trim();
+      if(v===''){
+        var kk=parseScalar(k);var key=''+kk;pos++;
+        if(hasChild(ind))obj[key]=parseBlock();
+        else obj[key]=null;
+      }else{obj[parseScalar(k)]=parseScalar(v);pos++;}
+    }
+    return obj;
+  }
+  function parseBlock(){
+    var ind=lines[pos].indent;
+    var c=lines[pos].content;
+    if(isSeqItem(c))return parseSeq(ind);
+    if(findColon(c)>=0)return parseMap(ind);
+    var v=parseScalar(c);pos++;return v;
+  }
+  var root=parseBlock();
+  return{ok:true,value:root,error:null};
+}
+
+/* ---------- flat-indent render ---------- */
+var collapsed={};     /* pointer -> true = children hidden */
+var parsedValue=null;
+var GRAND=60;
+
+function jType(v){
+  if(v===null||v===undefined)return'null';
+  if(Array.isArray(v))return'array';
+  if(typeof v==='object')return'object';
+  if(typeof v==='boolean')return'bool';
+  if(typeof v==='number')return'num';
+  return'str';
+}
+function countOf(v){return Array.isArray(v)?v.length:Object.keys(v).length;}
+function isContainer(v){var t=jType(v);return t==='array'||t==='object';}
+function isCollapsed(ptr){return collapsed[ptr]===true;}
+function escVal(v){
+  if(v===null||v===undefined)return'<span class="null">null</span>';
+  if(typeof v==='boolean')return'<span class="bool">'+v+'</span>';
+  if(typeof v==='number')return'<span class="num">'+v+'</span>';
+  return'<span class="str">"'+esc(''+v)+'"</span>';
+}
+function keyHtml(k){return'<span class="k">'+esc(''+k)+'</span>';}
+function pdf(token){return String(token).replace(/~/g,'~0').replace(/\//g,'~1');}
+function bracHtml(v){
+  return Array.isArray(v)
+    ?'<span class="punct">[</span><span class="num">'+v.length+'</span><span class="punct">]</span>'
+    :'<span class="punct">{</span><span class="num">'+Object.keys(v).length+'</span><span class="punct">}</span>';
+}
+function deref(obj,ptr){
+  if(ptr==='/'||ptr==='')return obj;
+  var cur=obj,parts=ptr.split('/');
+  for(var i=1;i<parts.length;i++){
+    if(cur===null||cur===undefined)return null;
+    var tok=parts[i].replace(/~1/g,'/').replace(/~0/g,'~');
+    if(Array.isArray(cur))cur=cur[parseInt(tok,10)];
+    else cur=cur[tok];
+  }
+  return cur;
+}
+/* rows: [{d:int ptr:string kind:'c'|'l' html:string desc:string}] */
+function flatten(v,ptr,d,lead,rows){
+  if(isContainer(v)){
+    var arr=Array.isArray(v);
+    var arrow=isCollapsed(ptr)?'▸':'▾';
+    rows.push({d:d,ptr:ptr,kind:'c',html:lead+'<span class="punct">'+arrow+'</span> '+bracHtml(v)});
+    if(isCollapsed(ptr))return;
+    if(arr){
+      for(var i=0;i<v.length;i++){
+        if(isContainer(v[i]))flatten(v[i],ptr+'/'+i,d+1,'  ',rows);
+        else rows.push({d:d+1,ptr:ptr+'/'+i,kind:'l',html:'  · '+escVal(v[i])});
+      }
+    }else{
+      var ks=Object.keys(v);
+      for(var j=0;j<ks.length;j++){
+        var key=ks[j],cv=v[key];
+        if(isContainer(cv))flatten(cv,ptr+'/'+pdf(key),d+1,keyHtml(key)+'<span class="punct">: </span>',rows);
+        else rows.push({d:d+1,ptr:ptr+'/'+pdf(key),kind:'l',html:'  '+keyHtml(key)+'<span class="punct">: </span>'+escVal(cv)});
+      }
+    }
+  }else{
+    rows.push({d:d,ptr:ptr,kind:'l',html:lead+escVal(v)});
+  }
+}
+function copyText(s){
+  try{if(navigator.clipboard)navigator.clipboard.writeText(s);}catch(e){}
+  var t=document.getElementById('toast');
+  t.textContent=s.length>56?s.slice(0,56)+'…':s;
+  t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},1300);
+}
+function render(){
+  var text=inEl.value;
+  if(!text.trim()){
+    wrapEl.innerHTML='<p class="muted" style="font-family:inherit;padding:14px">Paste YAML above to explore it.</p>';
+    memoEl.textContent='';memoEl.style.color='';
+    return;
+  }
+  if(parsedValue===null){
+    wrapEl.innerHTML='<div class="empty">(empty document)</div>';
+    memoEl.textContent='';return;
+  }
+  var rows=[];
+  if(isContainer(parsedValue))flatten(parsedValue,'/',0,'',rows);
+  else rows.push({d:0,ptr:'/',kind:'l',html:escVal(parsedValue)});
+  var h='';
+  for(var i=0;i<rows.length;i++){
+    var pad='';
+    for(var k=0;k<rows[i].d;k++)pad+='  ';
+    h+='<div class="ln" data-ptr="'+rows[i].ptr.replace(/"/g,'&quot;')+'">'+pad+rows[i].html+'</div>\n';
+  }
+  wrapEl.innerHTML='<div id="tree">'+h+'</div>';
+  memoEl.textContent='click any value to copy its JSON Pointer path';
+  memoEl.style.color='';
+  var els=wrapEl.parentNode?wrapEl.querySelectorAll('.ln'):[];
+  for(var m=0;m<els.length;m++){
+    els[m].onclick=function(){
+      var ptr=this.getAttribute('data-ptr');
+      var vv=deref(parsedValue,ptr);
+      if(isContainer(vv)){
+        var cur=!!collapsed[ptr];
+        collapsed[ptr]=!cur;
+        render();
+      }else{
+        copyText(ptr);
+      }
+    };
+  }
+}
+function updateURL(){history.replaceState(null,'','#y='+encodeURIComponent(inEl.value));}
+function collapseAll(close){
+  if(!parsedValue)return;
+  var stack=['/'];
+  while(stack.length){
+    var p=stack.pop();
+    var v=deref(parsedValue,p);
+    if(!v||!isContainer(v))continue;
+    collapsed[p]=close?true:false;
+    var ks=Array.isArray(v)?v.map(function(_,i){return String(i);}):Object.keys(v);
+    for(var i=0;i<ks.length;i++){
+      var cp=p+'/'+(Array.isArray(v)?ks[i]:pdf(ks[i]));
+      stack.push(cp);
+    }
+  }
+  render();
+}
+document.getElementById('cl').onclick=function(){collapseAll(true);};
+document.getElementById('op').onclick=function(){collapseAll(false);};
+document.getElementById('link').onclick=function(){
+  var u=location.origin+location.pathname+'#y='+encodeURIComponent(inEl.value);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(u).then(function(){
+      var b=document.getElementById('link'),o=b.textContent;b.textContent='✓ copied';setTimeout(function(){b.textContent=o;},1200);
+    });
+  }else{window.prompt('Copy link:',u);}
+};
+document.getElementById('in').addEventListener('input',function(){updateURL();reparse();});
+function reparse(){
+  var p=parseYAML(inEl.value);
+  parsedValue=p.value;
+  collapsed={};
+  render();
+}
+(function(){
+  var h=location.hash;
+  if(h&&h.indexOf('#y=')===0){
+    try{inEl.value=decodeURIComponent(h.slice(3));}catch(e){}
+  }else{
+    inEl.value='name: agent-02\nrole: autonomous agent\nartifacts:\n  - textkit\n  - jsonkit\n  - csvkit\ntraffic:\n  pageviews: 32\n  visitors: 2\ntags: [shelf, text]';
+  }
+  reparse();
+})();
+</script>
+</body>
+</html>
