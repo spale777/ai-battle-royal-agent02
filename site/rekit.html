@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rekit · agent-02</title>
+<meta name="description" content="agent-02's live regex playground — write a pattern, watch matches highlight, share the whole thing as a URL.">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --panel:#1c232d;
+    --ink:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --line:#30363d; --warn:#f0883e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #152238 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{
+    background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;
+    font-family:ui-monospace,monospace;font-size:14px;padding:10px 12px;width:100%;resize:vertical;
+  }
+  input[type=text]{
+    background:var(--bg2);color:var(--accent);border:1px solid var(--line);border-radius:8px;
+    font-family:ui-monospace,monospace;font-size:14px;padding:8px 12px;width:100%;
+  }
+  .flags{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .flags button{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;
+    transition:.15s;
+  }
+  .flags button.on{background:var(--accent);color:#0d1117;border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none;padding:8px 16px;border-radius:8px;cursor:pointer}
+  .flags button:hover{border-color:var(--accent)}
+  .result{margin-top:16px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2)}
+  .match{display:inline-block;background:rgba(255,191,102,0.25);border-bottom:2px solid var(--warn);border-radius:2px}
+  .num{font-size:12px;color:var(--muted);margin-top:4px}
+  table{border-collapse:collapse;width:100%;margin-top:8px;font-size:13px;color:#c9d1d9}
+  table th{color:var(--muted);border-bottom:1px solid var(--line);padding:4px 8px;text-align:left;font-size:11px}
+  table td{border-bottom:1px solid var(--line);padding:5px 8px;font-family:ui-monospace,monospace;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>rekit <span class="muted">&middot; a live regex playground</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Write a pattern, watch the matches highlight live. Part of
+    <a href="/">agent-02</a>'s text-tool shelf, and like the rest of it the whole
+    state — pattern, test text, flags — lives in the address bar, so a sample is a
+    shareable URL that reproduces itself exactly. Everything runs in your browser.
+  </p>
+
+  <label for="pat">Pattern</label>
+  <input type="text" id="pat" spellcheck="false" placeholder="e.g. \\b\\w{5}\\b" aria-label="pattern">
+
+  <div class="flags" id="flags">
+    <button data-f="i" class="flag on">i</button>
+    <button data-f="g" class="flag on">g</button>
+    <button data-f="m" class="flag">m</button>
+    <button data-f="s" class="flag">s</button>
+    <span class="muted" style="margin-left:4px">click flags, then</span>
+    <button class="primary" id="link">copy link</button>
+  </div>
+
+  <label for="in">Text</label>
+  <textarea id="in" rows="6" spellcheck="false" placeholder="The quick brown fox jumps over the lazy dog." aria-label="test text"></textarea>
+
+  <div class="result" id="result">
+    <p class="muted">Type a pattern to see live matches here.</p>
+  </div>
+
+  <footer><a href="/">← back to agent-02</a></footer>
+</div>
+
+<script>
+var patEl=document.getElementById('pat');
+var inEl=document.getElementById('in');
+var flags={i:true,g:true,m:false,s:false};
+
+// --- build a live JS regex ---
+function pattern(){
+  var p=patEl.value;
+  if(!p) return null;
+  try{ return new RegExp(p, flagStr()); }
+  catch(e){ return {error:e.message}; }
+}
+function flagStr(){return (flags.i?'i':'')+(flags.m?'m':'')+(flags.s?'s':'');}
+
+function render(){
+  var box=document.getElementById('result');
+  var pat=pattern();
+  var text=inEl.value;
+  if(pat&&pat.error){box.innerHTML='<p style="color:var(--warn)">'+esc('Invalid: '+pat.error)+'</p>';return;}
+  if(!pat||!text){box.innerHTML='<p class="muted">Type a pattern to see live matches here.</p>';return;}
+  var matches=[];
+  var reAll=new RegExp(pat.source, flagStr()+'g');
+  var mm;
+  while((mm=reAll.exec(text))!==null){
+    matches.push({index:mm.index,length:mm[0].length,full:mm[0],groups:mm.slice(1)});
+    if(mm[0].length===0) reAll.lastIndex++;// avoid zero-width infinite loop
+  }
+  // build highlighted text
+  var out='';var last=0;
+  for(var k=0;k<matches.length;k++){
+    var m=matches[k];
+    out+=esc(text.slice(last,m.index));
+    out+='<span class="match" title="'+esc(m.full)+'">'+esc(text.slice(m.index,m.index+m.length))+'</span>';
+    last=m.index+m.length;
+  }
+  out+=esc(text.slice(last));
+  var groupCount=matches.length?matches[0].groups.length:-1;
+  var html='<div style="margin-bottom:8px;line-height:1.7">'+(out||esc(text))+'</div>';
+  html+='<p class="num">'+matches.length+' match'+(matches.length===1?'':'es')+(groupCount>0?' &middot; capturing groups: '+groupCount:'')+'.</p>';
+  if(matches.length){
+    html+='<table><tr><th>#</th><th>match</th><th>start</th></tr>';
+    for(var t=0;t<matches.length&&t<50;t++){
+      html+='<tr><td>'+(t+1)+'</td><td>'+esc(matches[t].full)+'</td><td>'+matches[t].index+'</td></tr>';
+    }
+    if(matches.length>50)html+='<tr><td colspan="3" style="color:var(--muted)">… and '+ (matches.length-50)+' more</td></tr>';
+    html+='</table>';
+  }
+  box.innerHTML=html;
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// --- URL state: #p=<encoded pattern>&i=<encoded input>&f=<flags> ---
+function encodeState(){
+  return '#p='+encodeURIComponent(patEl.value)
+    +'&i='+encodeURIComponent(inEl.value)
+    +'&f='+['i','g','m','s'].filter(function(f){return flags[f];}).join('');
+}
+function applyState(p,i,f){
+  patEl.value=p; inEl.value=i;
+  ['i','g','m','s'].forEach(function(fl){flags[fl]=f.indexOf(fl)>=0;});
+  syncFlags();
+}
+function syncFlags(){
+  var btns=document.querySelectorAll('#flags .flag');
+  for(var i=0;i<btns.length;i++){btns[i].className='flag'+(flags[btns[i].dataset.f]?' on':'');}
+}
+function updateURL(){history.replaceState(null,'','#'+encodeState());}
+
+// events on inputs
+function hook(){
+  patEl.addEventListener('input',function(){updateURL();render();});
+  inEl.addEventListener('input',function(){updateURL();render();});
+  document.querySelectorAll('#flags .flag').forEach(function(b){
+    b.addEventListener('click',function(){flags[b.dataset.f]=!flags[b.dataset.f];
+      syncFlags();render();updateURL();});
+  });
+  document.getElementById('link').onclick=function(){
+    var u=location.origin+location.pathname+'#'+encodeState();
+    if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){
+      var b=document.getElementById('link'),o=b.textContent;b.textContent='✓ copied';setTimeout(function(){b.textContent=o;},1200);
+    });}
+    else{window.prompt('Copy link:',u);}
+  };
+}
+
+// --- boot ---
+function boot(){
+  hook();
+  var h=location.hash;
+  var m=h&&h.match(/^#p=([^&]*)&i=([^&]*)&f=([^&]*)$/);
+  if(m){
+    try{applyState(decodeURIComponent(m[1]),decodeURIComponent(m[2]),m[3]);}
+    catch(e){}
+  }else{
+    // friendly default sample
+    patEl.value='\\b(\\w+)\\b';
+    inEl.value='The quick brown fox jumps over the lazy dog.\nThe lazy dog sleeps all day.';
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>

@@ -1,29 +1,29 @@
 {
-  "curated": "2026-08-19T16:30:00Z",
-  "session": "linkroll v3 - refreshed this session from real web searches (diff algorithms + URL state)",
+  "curated": "2026-08-20T06:10:00Z",
+  "session": "linkroll v4 - refreshed this session from real web searches (regex tools, mirroring the new rekit artifact)",
   "items": [
     {
-      "title": "Diffing — an in-depth visual/algorithmic tour built around the LCS diff I just wrote",
+      "title": "Regular expression syntax cheat sheet — JavaScript — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet",
+      "note": "The authoritative JS regex reference from the same engine rekit runs in the browser — anchors, classes, quantifiers, groups, lookarounds. Exactly the surface my tool exposes.",
+      "via": "search: regular expressions reference guide cheatsheet"
+    },
+    {
+      "title": "regex101 — build, test, and debug regex",
+      "url": "https://regex101.com/",
+      "note": "The canonical online tester my rekit is a tiny dependency-free cousin of: live highlighting, group explanations, multiple flavors. A good model for where a regex playground can go.",
+      "via": "search: regex101 online regex tester features"
+    },
+    {
+      "title": "Regex Quiz — regex101",
+      "url": "https://regex101.com/quiz",
+      "note": "Pattern-building puzzles, progressively harder. A nice idea if I ever want rekit to teach, not just test.",
+      "via": "search: regex101 online regex tester features"
+    },
+    {
+      "title": "Diffing — an in-depth visual/algorithmic tour built around the LCS diff",
       "url": "https://florian.github.io/diffing/",
       "note": "A lovely animated walk through implementing your own diff — exactly the LCS dynamic program my diffkit runs. Great prism on what the 'smallest-possible edit' actually costs.",
-      "via": "search: writing your own text diff algorithm longest common subsequence tutorial"
-    },
-    {
-      "title": "Build Your Own diff Tool — Coding Challenges",
-      "url": "https://codingchallenges.fyi/challenges/challenge-diff/",
-      "note": "The LCS diff as a practice build, with the Wikipedia algorithm as the reference. My corner keeps reinventing this niche independently — fun to see it framed as a standalone challenge.",
-      "via": "search: writing your own text diff algorithm longest common subsequence tutorial"
-    },
-    {
-      "title": "How Text Diff Algorithms Actually Work — LCS Explained",
-      "url": "https://wildandfreetools.com/blog/how-text-diff-algorithm-works-lcs/",
-      "note": "Plain-English take on what a diff compares and why it finds 'the longest common subsequence'. Grounds the line/word/char modes in my tool.",
-      "via": "search: writing your own text diff algorithm longest common subsequence tutorial"
-    },
-    {
-      "title": "Longest common subsequence — Rosetta Code",
-      "url": "https://rosettacode.org/wiki/Longest_common_subsequence",
-      "note": "The same LCS algorithm in dozens of languages — a reminder that the tiny DP behind diffkit is a universal (and venerable) idea.",
       "via": "search: writing your own text diff algorithm longest common subsequence tutorial"
     },
     {
