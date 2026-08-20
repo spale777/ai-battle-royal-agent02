@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>csvkit · agent-02</title>
+<meta name="description" content="Paste CSV, see it become a sortable table, export JSON — and share the whole sheet as a URL.">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --panel:#1c232d;
+    --ink:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --line:#30363d; --warn:#f0883e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #152238 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{
+    background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;
+    font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;
+  }
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;
+  }
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 8px;font-size:13px}
+  .tablewrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);width:100%}
+  table{border-collapse:collapse;font-family:ui-monospace,monospace;font-size:13px;width:100%;white-space:pre}
+  th{background:var(--panel);color:var(--accent);cursor:pointer;padding:7px 10px;border:1px solid var(--line);text-align:left;position:sticky;top:0;user-select:none}
+  th::after{color:var(--muted);font-size:10px}
+  td{padding:6px 10px;border:1px solid var(--line);color:var(--ink)}
+  td:hover{background:rgba(88,166,255,.06)}
+  tr:nth-child(even) td{background:rgba(139,148,158,.04)}
+  .empty{color:var(--warn);padding:14px;font-size:13px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>csvkit <span class="muted">&middot; a live CSV explorer</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Paste comma/tab/pipe-separated data and it becomes a sortable table below — click any
+    header to sort (number-aware), export the sheet as JSON or download it. Same house rule as the
+    rest of <a href="/">agent-02</a>'s text shelf: the <em>sheet itself</em> lives in the address bar,
+    so any CSV is a shareable URL that reproduces itself. Runs entirely in your browser.
+  </p>
+
+  <label for="in">CSV</label>
+  <textarea id="in" rows="9" spellcheck="false"
+    placeholder='name,role,tags&#10;textkit,text unit,chainable&#10;mdkit,text unit,markdown renderer&#10;jsonkit,text unit,json explorer'></textarea>
+
+  <div class="controls">
+    <span class="muted">delimiter</span>
+    <select id="delim">
+      <option value="auto">auto</option>
+      <option value=",">, (comma)</option>
+      <option value="\t">⇥ (tab)</option>
+      <option value=";">; (semicolon)</option>
+      <option value="|">| (pipe)</option>
+    </select>
+    <button id="json" title="copy the whole table as JSON objects">copy JSON</button>
+    <button id="dl" title="download the table as a .json file">download .json</button>
+    <button class="primary" id="link" title="share/save this exact sheet">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <div id="tablewrap" class="tablewrap" style="min-height:120px">
+    <p class="muted" style="font-family:inherit;padding:14px">Paste CSV above to see it as a table.</p>
+  </div>
+
+  <footer><a href="/">← back to agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var wrapEl=document.getElementById('tablewrap');
+var memoEl=document.getElementById('memo');
+var delimSel=document.getElementById('delim');
+
+// HTML-escape text incl. quotes (jsonkit lesson: quotes break data-* and attribute contexts)
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+var DELIMS=[',','\t',';','|'];
+function detectDelim(text){
+  var line=text.split('\n')[0]||'';
+  var best='auto',bestN=-1;
+  for(var d=0;d<DELIMS.length;d++){
+    var n=0, inQ=false;
+    for(var i=0;i<line.length;i++){
+      var c=line[i];
+      if(c==='"') inQ=!inQ;
+      else if(!inQ && c===DELIMS[d]) n++;
+    }
+    if(n>bestN){bestN=n;best=DELIMS[d];}
+  }
+  return best;
+}
+function activeDelim(text){
+  var v=delimSel.value;
+  if(v!=='auto') return v;
+  return detectDelim(text);
+}
+// real-ish CSV parse: quoted fields, "" escapes, embedded delimiter/newline
+function parseCSV(text,delim){
+  if(!text) return [];
+  var rows=[],row=[],field='',inQ=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(inQ){
+      if(c==='"'){
+        if(text[i+1]==='"'){field+='"';i++;}
+        else inQ=false;
+      }else field+=c;
+    }else{
+      if(c==='"') inQ=true;
+      else if(c===delim){row.push(field);field='';}
+      else if(c==='\n'){row.push(field);field='';rows.push(row);row=[];}
+      else if(c==='\r'){/* skip */}
+      else field+=c;
+    }
+  }
+  if(field!==''||row.length){row.push(field);rows.push(row);}
+  // drop a trailing fully-empty line
+  if(rows.length && rows[rows.length-1].length===1 && rows[rows.length-1][0]==='') rows.pop();
+  return rows;
+}
+// number-aware compare
+function numOrStr(v){var n=Number(v);return (String(v).trim()!=='' && !isNaN(n))?{n:true,v:n}:{n:false,v:String(v)};}
+function cmpVal(a,b){
+  var A=numOrStr(a),B=numOrStr(b);
+  if(A.n&&B.n) return A.v-B.v;
+  var sa=A.v+'',sb=B.v+'';
+  return sa<sb?-1:sa>sb?1:0;
+}
+
+var sheet={data:[],header:[],delim:',',sortKey:null,sortDir:1};
+
+function render(){
+  var txt=inEl.value;
+  if(!txt.trim()){
+    wrapEl.innerHTML='<p class="muted" style="font-family:inherit;padding:14px">Paste CSV above to see it as a table.</p>';
+    memoEl.textContent='';memoEl.style.color='';
+    sheet={data:[],header:[],delim:',',sortKey:null,sortDir:1};
+    return;
+  }
+  var delim=activeDelim(txt);
+  var rows=parseCSV(txt,delim);
+  sheet.delim=delim;
+  if(!rows.length){wrapEl.innerHTML='<div class="empty">(no rows parsed)</div>';return;}
+  // first row = header; if it's immediately empty, synthesize column names
+  var header=rows[0], data=rows.slice(1);
+  // normalize: equalize column width using the header length
+  var w=header.length; if(w<1) w=1;
+  var norm=function(r){var out=(r||[]).concat(new Array(w).fill(''));return out.slice(0,w);};
+  header=norm(header);
+  var d=data.map(norm);
+  // drop header-only sheets: if no data rows, keep as empty table
+  sheet.header=header; sheet.data=d;
+  buildTable();
+}
+function buildTable(){
+  var header=sheet.header, data=sheet.data;
+  // apply sort (stable)
+  if(sheet.sortKey!==null){
+    var idx=sheet.sortKey;
+    data=data.slice().sort(function(a,b){
+      var c=cmpVal(a[idx]!=null?a[idx]:'',b[idx]!=null?b[idx]:'');
+      return c*sheet.sortDir;
+    });
+  }
+  var h='<table><thead><tr>';
+  for(var k=0;k<header.length;k++){
+    var mark='';
+    if(sheet.sortKey===k) mark=sheet.sortDir>0?' ▴':' ▾';
+    h+='<th data-i="'+k+'" title="click to sort">'+esc(header[k])+mark+'</th>';
+  }
+  h+='</tr></thead><tbody>';
+  for(var r=0;r<data.length;r++){
+    h+='<tr>';
+    for(var c=0;c<header.length;c++){
+      var v=data[r][c]!=null?data[r][c]:'';
+      h+='<td>'+esc(v)+'</td>';
+    }
+    h+='</tr>';
+  }
+  h+='</tbody></table>';
+  wrapEl.innerHTML=h;
+  // memo
+  var ncols=header.length, nrows=data.length;
+  var sortTxt=sheet.sortKey!==null?' · sort '+esc(header[sheet.sortKey])+(sheet.sortDir>0?' asc':' desc'):'';
+  memoEl.textContent=nrows+' row'+(nrows===1?'':'s')+' × '+ncols+' col'+(ncols===1?'':'s')+' · delimiter '+JSON.stringify(sheet.delim)+sortTxt;
+  memoEl.style.color='';
+  // wire header clicks
+  var ths=wrapEl.querySelectorAll('th');
+  for(var i=0;i<ths.length;i++){
+    ths[i].addEventListener('click',function(){
+      var col=+this.dataset.i;
+      if(sheet.sortKey===col){sheet.sortDir*=-1;}else{sheet.sortKey=col;sheet.sortDir=1;}
+      buildTable();
+      updateURL();
+    });
+  }
+}
+function toJSON(){
+  var header=sheet.header,data=sheet.data;
+  return data.map(function(row){
+    var o={};
+    for(var i=0;i<header.length;i++){
+      if(header[i]!=='' ) o[header[i]]=row[i]!=null?row[i]:'';
+    }
+    return o;
+  });
+}
+function copyText(s){
+  try{ navigator.clipboard.writeText(s); }catch(e){}
+  var t=document.getElementById('toast');
+  t.textContent=s.length>56?s.slice(0,56)+'…':s;
+  t.style.opacity='1';setTimeout(function(){t.style.opacity='0';},1300);
+}
+function updateURL(){ history.replaceState(null,'','#c='+encodeURIComponent(inEl.value)); }
+
+document.getElementById('in').addEventListener('input',function(){updateURL();render();});
+document.getElementById('delim').onchange=function(){render();};
+document.getElementById('json').onclick=function(){
+  try{ copyText(JSON.stringify(toJSON(),null,2)); }catch(e){}
+};
+document.getElementById('dl').onclick=function(){
+  var blob=new Blob([JSON.stringify(toJSON(),null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='csvkit.json'; a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+};
+document.getElementById('link').onclick=function(){
+  var u=location.origin+location.pathname+'#c='+encodeURIComponent(inEl.value);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(u).then(function(){
+      var b=document.getElementById('link'),o=b.textContent;b.textContent='✓ copied';setTimeout(function(){b.textContent=o;},1200);
+    });
+  } else { window.prompt('Copy link:',u); }
+};
+
+// boot
+(function(){
+  var h=location.hash;
+  if(h&&h.indexOf('#c=')===0){
+    try{inEl.value=decodeURIComponent(h.slice(3));}catch(e){}
+  }else{
+    inEl.value='kind,cell,name\nbuild,bard,coherence\nian,lion,\nish,kale,width';
+  }
+  render();
+})();
+</script>
+</body>
+</html>
