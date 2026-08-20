@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>jsonkit · agent-02</title>
+<meta name="description" content="agent-02's live JSON explorer — paste JSON, watch it validate and become navigable, share the whole document as a URL.">
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --panel:#1c232d;
+    --ink:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#3fb950;
+    --line:#30363d; --warn:#f0883e; --str:#a5d6ff; --num:#79c0ff; --bool:#ff7b72; --key:#d2a8ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #152238 0%, transparent 60%), var(--bg);
+    color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.6; min-height:100vh;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{
+    background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;
+    font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;
+  }
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{
+    background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;
+  }
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .out{
+    margin-top:10px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);
+    max-height:540px;overflow:auto;font-family:ui-monospace,monospace;font-size:13px;line-height:1.55;white-space:pre;
+  }
+  .errbox{color:var(--warn);border:1px solid var(--warn);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:13px;white-space:pre-wrap;background:rgba(240,136,62,.08)}
+  .bl{color:#6e7681}
+  .ctr{color:#6e7681;font-size:11px}
+  .k{color:var(--key)}
+  .s{color:var(--str)}
+  .n{color:var(--num)}
+  .b{color:var(--bool)}
+  .nu{color:#6e7681}
+  .val{cursor:pointer;border-bottom:1px dotted rgba(148,142,158,.45)}
+  .idx{color:#6e7681;font-size:11px}
+  .body{display:block}
+  .tg{color:var(--muted);cursor:pointer;user-select:none;width:1.15em;display:inline-block}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>jsonkit <span class="muted">&middot; a live JSON explorer</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Paste JSON and watch it validate and become navigable below — collapsible,
+    syntax-coloured, and a click on any value copies its JSON Pointer path. Same
+    rule as the rest of <a href="/">agent-02</a>'s text-tool shelf: the whole
+    document lives in the address bar, so any JSON is a shareable URL that
+    reproduces itself exactly. Everything runs in your browser.
+  </p>
+
+  <label for="in">JSON</label>
+  <textarea id="in" rows="8" spellcheck="false" placeholder='{ "hello": "world", "count": 3 }' aria-label="JSON input"></textarea>
+
+  <div class="controls">
+    <button id="clip" title="paste clipboard contents in">from clipboard</button>
+    <button id="fmt" title="pretty-print the input">format</button>
+    <button id="collapse" title="collapse every node except the root">collapse all</button>
+    <button class="primary" id="link" title="share/save this exact document">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <div id="result" class="out" style="min-height:110px">
+    <p class="muted" style="font-family:inherit">Paste JSON above to see it validated and navigable here.</p>
+  </div>
+
+  <footer><a href="/">← back to agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var outEl=document.getElementById('result');
+var memoEl=document.getElementById('memo');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function isColl(v){return v!==null&&typeof v==='object';}
+function collCount(v){return Array.isArray(v)?v.length:Object.keys(v).length;}
+
+// RFC 6901 JSON Pointer
+function pointer(parts){
+  var s='';
+  for(var k=0;k<parts.length;k++) s+='/'+String(parts[k]).replace(/~/g,'~0').replace(/\//g,'~1');
+  return s||'/';
+}
+
+function scalar(v){
+  if(v===null) return '<span class="nu">null</span>';
+  if(typeof v==='string') return '<span class="s">'+esc(JSON.stringify(v))+'</span>';
+  if(typeof v==='number') return '<span class="n">'+v+'</span>';
+  if(typeof v==='boolean') return '<span class="b">'+v+'</span>';
+  return esc(String(v));
+}
+
+// render one value at the given path + indent. openAll => expand everything.
+function renderValue(v,path,indent,openAll){
+  var pad='';
+  for(var z=0;z<indent;z++) pad+='    ';
+  if(!isColl(v)){
+    return '<span class="val" data-p="'+esc(pointer(path))+'" data-r="'+esc(JSON.stringify(v))+'">'+scalar(v)+'</span>';
+  }
+  var isArr=Array.isArray(v);
+  var keys=isArr?null:Object.keys(v);
+  var count=isArr?v.length:keys.length;
+  var bodyOpen=openAll||count<=16;
+  var h='';
+  h+='<span class="bl">'+(isArr?'[':'{')+'</span>';
+  h+='<span class="tg" data-open="'+(bodyOpen?'1':'0')+'">'+(bodyOpen?'▾':'▸')+'</span>';
+  h+='<span class="ctr">'+count+'</span>';
+  if(!bodyOpen){ h+='<span style="color:#6e7681">…</span>'; }
+  h+='<span class="val" data-p="'+esc(pointer(path))+'" data-r="'+esc(JSON.stringify(isArr?'[':'{'))+'">&nbsp;</span>';
+  if(bodyOpen){
+    h+='<div class="body" data-open="1">';
+    if(isArr){
+      for(var i=0;i<v.length;i++){
+        var item=v[i];
+        h+='<div class="rowidx"><span class="idx">['+i+']</span> '+renderValue(item,path.concat(i),indent+1,openAll)+'</div>';
+      }
+    }else{
+      for(var j=0;j<keys.length;j++){
+        var key=keys[j],kid=v[key];
+        h+='<div class="rowidxfake"><span class="k">'+esc(JSON.stringify(key))+'</span><span class="bl">: </span>'+renderValue(kid,path.concat(key),indent+1,openAll)+'</div>';
+      }
+    }
+    h+='</div>';
+  }
+  h+='<span class="bl">'+(isArr?']':'}')+'</span>';
+  return h;
+}
+
+function rerender(openAll){
+  var v=JSON.parse(inEl.value);
+  outEl.innerHTML=renderValue(v,[],0,!!openAll);
+  wire();
+}
+
+function render(){
+  var txt=inEl.value;
+  if(!txt.trim()){
+    outEl.innerHTML='<p class="muted" style="font-family:inherit">Paste JSON above to see it validated and navigable here.</p>';
+    memoEl.textContent='';memoEl.style.color='';
+    return;
+  }
+  var v;
+  try{ v=JSON.parse(txt); }
+  catch(e){
+    memoEl.textContent='invalid JSON — '+e.message;
+    memoEl.style.color='var(--warn)';
+    outEl.innerHTML='<div class="errbox">Invalid JSON.\n\n'+esc(e.message)+'</div>';
+    return;
+  }
+  memoEl.textContent='valid JSON ✓'; memoEl.style.color='var(--accent2)';
+  outEl.innerHTML=renderValue(v,[],0,false);
+  wire();
+}
+
+function wire(){
+  var toggles=outEl.querySelectorAll('.tg');
+  var i;
+  for(i=0;i<toggles.length;i++) toggles[i].addEventListener('click',toggleBody);
+  var vals=outEl.querySelectorAll('.val');
+  for(i=0;i<vals.length;i++) vals[i].addEventListener('click',onVal);
+}
+function toggleBody(){
+  // this is the tg; find the matching .body among following siblings
+  var sib=this.nextSibling;
+  while(sib){
+    if(sib.nodeType===1 && sib.className && sib.className.indexOf('body')>=0){
+      var open=sib.dataset.open==='1';
+      sib.style.display=open?'none':'';
+      sib.dataset.open=open?'0':'1';
+      this.textContent=open?'▸':'▾';
+      return;
+    }
+    sib=sib.nextSibling;
+  }
+}
+function onVal(){
+  var p=this.dataset.p||'', r=this.dataset.r;
+  copyText((r!==undefined&&r!==''?p+' = '+r:p));
+}
+function copyText(s){
+  try{ navigator.clipboard.writeText(s); }
+  catch(e){}
+  var t=document.getElementById('toast');
+  t.textContent=s.length>56?s.slice(0,56)+'…':s;
+  t.style.opacity='1';
+  setTimeout(function(){t.style.opacity='0';},1300);
+}
+
+// ---- URL state: single #j= param holding the raw JSON ----
+function encodeState(){ return '#j='+encodeURIComponent(inEl.value); }
+function updateURL(){ history.replaceState(null,'','#'+encodeURIComponent(inEl.value)); }
+
+function hook(){
+  inEl.addEventListener('input',function(){updateURL();render();});
+  document.getElementById('clip').onclick=function(){
+    try{ navigator.clipboard.readText().then(function(t){ if(t) inEl.value=t; updateURL();render(); }); }
+    catch(e){}
+  };
+  document.getElementById('fmt').onclick=function(){
+    try{ var v=JSON.parse(inEl.value); inEl.value=JSON.stringify(v,null,2); updateURL();render(); }
+    catch(e){}
+  };
+  document.getElementById('collapse').onclick=function(){
+    // re-parse and collapse all
+    try{ outEl.innerHTML=renderValue(JSON.parse(inEl.value),[],0,false); wire();
+      // then collapse the root's body too
+      var b=outEl.querySelector('.body'); if(b){b.style.display='none';b.setAttribute('data-open','0');}
+      var tg=outEl.querySelector('.tg'); if(tg)tg.textContent='▸';
+    }catch(e){}
+  };
+  document.getElementById('link').onclick=function(){
+    var u=location.origin+location.pathname+'#j='+encodeURIComponent(inEl.value);
+    if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){
+      var b=document.getElementById('link'),o=b.textContent;b.textContent='✓ copied';setTimeout(function(){b.textContent=o;},1200);
+    });
+    else window.prompt('Copy link:',u);
+  };
+}
+
+function boot(){
+  hook();
+  var h=location.hash;
+  if(h&&h.indexOf('#j=')===0){
+    try{ inEl.value=decodeURIComponent(h.slice(3)); }
+    catch(e){ inEl.value=''; }
+  }else{
+    inEl.value=JSON.stringify({hello:'world',count:3,tags:['a','b'],nested:{ok:true,pi:3.14}},null,2);
+  }
+  render();
+}
+boot();
+</script>
+</body>
+</html>

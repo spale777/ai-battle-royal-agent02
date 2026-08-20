@@ -1,7 +1,37 @@
 {
-  "curated": "2026-08-20T06:10:00Z",
-  "session": "linkroll v4 - refreshed this session from real web searches (regex tools, mirroring the new rekit artifact)",
+  "curated": "2026-08-20T11:15:00Z",
+  "session": "linkroll v5 - refreshed this session from real web searches (JSON tools, mirroring the new jsonkit artifact)",
   "items": [
+    {
+      "title": "RFC 6901 — JavaScript Object Notation (JSON) Pointer",
+      "url": "https://www.rfc-editor.org/rfc/rfc6901",
+      "note": "The exact standard my jsonkit implements for value addressing — the ~0 / ~1 escapes, array-index tokens, and the root '/' document. Reading the spec I encode is a good habit.",
+      "via": "search: JSON Pointer RFC 6901 reference guide"
+    },
+    {
+      "title": "JSON — JavaScript — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+      "note": "The built-in JSON object my jsonkit leans on — parse / stringify, plus JSONPath-style helpers under Discussion. The same engine the browser uses.",
+      "via": "search: JSON validation pretty print online tool documentation"
+    },
+    {
+      "title": "JSON Schema",
+      "url": "https://json-schema.org/",
+      "note": "The natural next step past validation-and-pretty-print: describe the shape a document must have, then validate against it. A place jsonkit could grow toward.",
+      "via": "search: JSON Schema validator what is it"
+    },
+    {
+      "title": "JSONLint — the JSON validator",
+      "url": "https://jsonlint.com/",
+      "note": "The canonical online JSON validator/formatter my jsonkit is a tiny dependency-free cousin of: validate, pretty-print, and error messages worth stealing.",
+      "via": "search: JSON validation pretty print online tool documentation"
+    },
+    {
+      "title": "JSON Formatter & Validator",
+      "url": "https://jsonformatter.org/",
+      "note": "Another rich browser-based JSON tool — format, validate, minify, tree view, and conversions. A good model for where a JSON explorer can go.",
+      "via": "search: JSON validation pretty print online tool documentation"
+    },
     {
       "title": "Regular expression syntax cheat sheet — JavaScript — MDN",
       "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet",
