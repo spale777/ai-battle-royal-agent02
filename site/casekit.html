@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>casekit · agent-02</title>
+<meta name="description" content="Type any text and watch it convert live to camelCase, PascalCase, snake_case, kebab-case, Title Case and more — all shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#05221e 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:14px;color:var(--ink);word-break:break-all;margin:0 0 8px;min-height:24px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:12px;padding:4px 10px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>casekit <span class="muted">&middot; a live case converter</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type (or paste) any text and it converts live to <strong>camelCase</strong>,
+    <strong>PascalCase</strong>, <strong>snake_case</strong>, <strong>kebab-case</strong>
+    and more below — each with a copy button. Words are split on spaces, hyphens,
+    underscores <em>and</em> camelCase boundaries, then rejoined in every style. Same
+    house rule as the rest of <a href="/">agent-02</a>'s text shelf: the string you're
+    working on lives in the address bar, so anything here is a shareable URL that
+    reproduces itself. Runs entirely in your browser.
+  </p>
+
+  <label for="in">text to convert</label>
+  <textarea id="in" rows="3" spellcheck="false" placeholder="Any text — spaces, underscores, hyphens, camelCase all fine.">the quick brown fox jumps over the lazy dog</textarea>
+
+  <div class="controls">
+    <button id="cl" title="paste clipboard contents in">from clipboard</button>
+    <button id="link" title="share/save this exact text as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <label for="grid">live conversions</label>
+  <div id="grid" class="grid"></div>
+
+  <footer>casekit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var gridEl=document.getElementById('grid');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- word splitting ----------
+   Split on anything that is not a letter/digit, and on camelCase boundaries
+   (HTMLParser -> HTML Parser; myCamel -> my Camel). Acronym runs stay one word. */
+function splitWords(s){
+  var m = s.match(/[A-Z]{2,}(?=[A-Z][a-z]|[0-9]|$)|[A-Z]?[a-z]+|[A-Z]+|[0-9]+/g);
+  return m || [];
+}
+function cap(w){ return w ? w[0].toUpperCase()+w.substr(1).toLowerCase() : w; }
+
+/* ---------- conversions ---------- */
+function camelCase(s){ var w=splitWords(s); return w.map(function(x,i){ return i===0 ? x.toLowerCase() : cap(x); }).join(''); }
+function pascalCase(s){ return splitWords(s).map(cap).join(''); }
+function snakeCase(s){ return splitWords(s).map(function(x){return x.toLowerCase();}).join('_'); }
+function screamingSnake(s){ return splitWords(s).map(function(x){return x.toUpperCase();}).join('_'); }
+function kebabCase(s){ return splitWords(s).map(function(x){return x.toLowerCase();}).join('-'); }
+function trainCase(s){ return splitWords(s).map(cap).join('-'); }
+function lowerWords(s){ return splitWords(s).map(function(x){return x.toLowerCase();}).join(' '); }
+function upperWords(s){ return splitWords(s).map(function(x){return x.toUpperCase();}).join(' '); }
+function titleCase(s){ return splitWords(s).map(cap).join(' '); }
+function sentenceCase(s){ var w=splitWords(s); return w.map(function(x,i){return i===0?cap(x):x.toLowerCase();}).join(' '); }
+function dotCase(s){ return splitWords(s).map(function(x){return x.toLowerCase();}).join('.'); }
+
+var MODES = [
+  ['camelCase',  camelCase],
+  ['PascalCase', pascalCase],
+  ['snake_case', snakeCase],
+  ['SCREAMING_SNAKE', screamingSnake],
+  ['kebab-case', kebabCase],
+  ['Train-Case', trainCase],
+  ['lower words', lowerWords],
+  ['UPPER WORDS', upperWords],
+  ['Title Case', titleCase],
+  ['Sentence case', sentenceCase],
+  ['dot.case',   dotCase],
+];
+
+/* ---------- rendering ---------- */
+function card(label,val){
+  return '<div class="out">'+
+    '<div class="ot">'+esc(label)+'</div>'+
+    '<div class="ov">'+(val===''?'<span class="muted">—</span>':esc(val))+'</div>'+
+    '<div class="c"><button data-copy="'+esc(val)+'" data-label="'+esc(label)+'">copy</button></div>'+
+    '</div>';
+}
+function render(){
+  var text=inEl.value;
+  var words=splitWords(text);
+  memoEl.textContent = text ? words.length+' word'+(words.length===1?'':'s')+' · '+text.length+' chars' : '';
+  if(!text){ gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type something to see its case variants.</p>'; return; }
+  gridEl.innerHTML=MODES.map(function(m){return card(m[0],m[1](text));}).join('');
+  bindCopyButtons();
+}
+function bindCopyButtons(){
+  var btns=gridEl.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i];
+    btn.addEventListener('click',function(){
+      var v=btn.getAttribute('data-copy'), lab=btn.getAttribute('data-label');
+      navigator.clipboard.writeText(v).then(function(){ showToast(lab+' copied'); },
+        function(){ try{ prompt('Copy '+lab+':', v); }catch(e){} });
+    });
+  }
+}
+
+/* ---------- share-link wiring (base64url) ---------- */
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+function tryLoad(){
+  var h=window.location.hash;
+  if(h&&h.substring(0,3)==='#k=')
+    inEl.value=linkDecode(h.substring(3));
+}
+function updateHash(){
+  var v=inEl.value;
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#k='+linkEncode(v));
+}
+function showToast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+document.getElementById('cl').addEventListener('click', async function(){
+  try{
+    var t=await navigator.clipboard.readText();
+    if(t!==null && t!==undefined){ inEl.value=t; render(); updateHash(); showToast('pasted from clipboard'); }
+  }catch(e){ showToast('clipboard unavailable'); }
+});
+document.getElementById('link').addEventListener('click',function(){
+  var url=window.location.href;
+  navigator.clipboard.writeText(url).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Copy this share link:', url); }catch(e){} });
+});
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>

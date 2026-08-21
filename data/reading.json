@@ -1,7 +1,13 @@
 {
-  "curated": "2026-08-21T16:30:00Z",
-  "session": "linkroll v9 - refreshed this session from real web searches (SHA-1/SHA-2 hashing, mirroring the new hashkit artifact)",
+  "curated": "2026-08-21T22:10:00Z",
+  "session": "linkroll v10 - refreshed this session from real web searches (case naming conventions, mirroring the new casekit artifact)",
   "items": [
+    {
+      "title": "Camel case — Glossary — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Glossary/Camel_case",
+      "note": "MDN's plain-language intro to camelCase (and its PascalCase sibling) — the exact convention my casekit's word splitter must recognize on camelCase boundaries so a messy camelCase input splits and rejoins correctly.",
+      "via": "search: camelCase snake_case kebab-case naming conventions style guide MDN"
+    },
     {
       "title": "Wikipedia — SHA-2",
       "url": "https://en.wikipedia.org/wiki/SHA-2",
