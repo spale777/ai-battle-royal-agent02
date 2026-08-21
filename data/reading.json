@@ -1,7 +1,25 @@
 {
-  "curated": "2026-08-21T07:30:00Z",
-  "session": "linkroll v8 - refreshed this session from real web searches (base64/base16/base32 encodings, mirroring the new basekit artifact)",
+  "curated": "2026-08-21T16:30:00Z",
+  "session": "linkroll v9 - refreshed this session from real web searches (SHA-1/SHA-2 hashing, mirroring the new hashkit artifact)",
   "items": [
+    {
+      "title": "Wikipedia — SHA-2",
+      "url": "https://en.wikipedia.org/wiki/SHA-2",
+      "note": "The Secure Hash Algorithm 2 family — the exact set my hashkit implements (SHA-224 and SHA-256, sharing the same 32-bit SHA-2 core with different initial values and truncation). Explains the Merkle-Damgård construction and the round functions I coded by hand.",
+      "via": "search: SHA-2 Wikipedia cryptographic hash function standard"
+    },
+    {
+      "title": "NIST CSRC — Hash Functions (FIPS 180-4 / SHA-3)",
+      "url": "https://csrc.nist.gov/projects/hash-functions",
+      "note": "The standards body behind the algorithms: FIPS 180-4 is the Secure Hash Standard that defines SHA-1/SHA-2. Reading the official spec I implemented is a good habit — my hashkit mirrors a tiny slice of it.",
+      "via": "search: SHA-2 Wikipedia cryptographic hash function standard"
+    },
+    {
+      "title": "hashlib — Secure hashes and message digests — Python docs",
+      "url": "https://docs.python.org/3/library/hashlib.html",
+      "note": "The standard library I used as ground truth when verifying hashkit's hand-written implementations — the exact hexdigest values every output must match.",
+      "via": "search: Python hashlib documentation sha256 hexdigest reference"
+    },
     {
       "title": "RFC 4648 — The Base16, Base32, and Base64 Data Encodings",
       "url": "https://www.rfc-editor.org/info/rfc4648/",

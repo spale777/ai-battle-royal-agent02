@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hashkit — SHA-1 / SHA-224 / SHA-256 live hasher</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         max-width: 820px; margin: 0 auto; padding: 16px; line-height: 1.45; }
+  h1 { margin-bottom: 4px; }
+  .sub { color: #666; margin-bottom: 18px; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 110px; font-family: ui-monospace, Menlo, Consolas, monospace;
+             font-size: 14px; padding: 8px; border: 1px solid #888; border-radius: 6px; background: #fcfcfc; }
+  .hashrow { display: flex; align-items: center; gap: 10px; margin: 10px 0;
+             border: 1px solid #ccc; border-radius: 8px; padding: 10px 12px; background: #f7f7f7; }
+  .hlabel { width: 90px; font-weight: 600; flex-shrink: 0; }
+  .hval { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; word-break: break-all; flex: 1; }
+  .len { color: #888; font-size: 12px; flex-shrink: 0; width: 34px; text-align: right; }
+  button { border: 1px solid #888; background: #eee; border-radius: 6px; padding: 3px 9px;
+           cursor: pointer; font-size: 13px; flex-shrink: 0; }
+  button:hover { background: #ddd; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+           background: #222; color: #fff; padding: 7px 14px; border-radius: 6px;
+           font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: .95; }
+  .meta { margin-top: 16px; font-size: 12px; color: #777; }
+  .meta code { background: #ececec; padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>hashkit</h1>
+<div class="sub">Live SHA-1 / SHA-224 / SHA-256 hasher — hand-written, verified against Python's hashlib.</div>
+
+<textarea id="input" placeholder="Type any text here… the hash updates live, and this page IS the link (#h=…)." spellcheck="false"></textarea>
+
+<div class="hashrow">
+  <span class="hlabel">SHA-1</span>
+  <span class="hval" id="sha1"></span>
+  <span class="len" id="sha1len"></span>
+  <button data-alg="sha1">copy</button>
+</div>
+<div class="hashrow">
+  <span class="hlabel">SHA-224</span>
+  <span class="hval" id="sha224"></span>
+  <span class="len" id="sha224len"></span>
+  <button data-alg="sha224">copy</button>
+</div>
+<div class="hashrow">
+  <span class="hlabel">SHA-256</span>
+  <span class="hval" id="sha256"></span>
+  <span class="len" id="sha256len"></span>
+  <button data-alg="sha256">copy</button>
+</div>
+
+<p><button id="share">Copy share link</button>
+   <button id="clear">Clear</button></p>
+
+<div class="meta">
+  Everything runs in your browser — nothing is sent to the server. The text is stored in the URL fragment
+  (<code>#h=…</code>, base64url) so any payload is a shareable link that reproduces itself. Algorithms are
+  implemented by hand (no <code>crypto.subtle</code> — this site is plain HTTP) and each output was verified
+  byte-for-byte against Python's <code>hashlib</code>.
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="hashcore.js"></script>
+<script>
+'use strict';
+const input = document.getElementById('input');
+const cells = { sha1: document.getElementById('sha1'), sha224: document.getElementById('sha224'), sha256: document.getElementById('sha256') };
+const lenCells = { sha1: document.getElementById('sha1len'), sha224: document.getElementById('sha224len'), sha256: document.getElementById('sha256len') };
+const ROOT = '0'; // base64url alphabet index zero
+
+// ---- base64url encode/decode (UTF-8 safe) --------------------------------
+function b64uEncode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64uDecode(s) {
+  let b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+// ---- link state -----------------------------------------------------------
+function updateHash() {
+  const v = input.value;
+  if (!v) { history.replaceState(null, '', location.pathname); return; }
+  history.replaceState(null, '', '#h=' + b64uEncode(v));
+}
+function tryLoad() {
+  const h = window.location.hash;
+  if (h && h.substring(0, 3) === '#h=') {
+    try {
+      const v = b64uDecode(h.slice(3));
+      if (v !== undefined) { input.value = v; return true; }
+    } catch (e) { /* ignore bad payload */ }
+  }
+  return false;
+}
+
+// ---- rendering ------------------------------------------------------------
+function render() {
+  const v = input.value;
+  const fns = { sha1: sha1Hex, sha224: sha224Hex, sha256: sha256Hex };
+  for (const alg of Object.keys(fns)) {
+    const hex = fns[alg](v);
+    cells[alg].textContent = hex;
+    lenCells[alg].textContent = (hex.length * 4) + 'b';
+  }
+}
+
+// ---- clipboard + toast ----------------------------------------------------
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1400);
+}
+function copyText(txt) {
+  navigator.clipboard.writeText(txt).then(() => toast('copied'),
+    () => { // fallback for non-secure contexts
+      const ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('copied'); } catch (e) { toast('copy failed'); }
+      document.body.removeChild(ta);
+    });
+}
+
+// ---- wiring ---------------------------------------------------------------
+input.addEventListener('input', () => { render(); updateHash(); });
+document.querySelectorAll('button[data-alg]').forEach(b =>
+  b.addEventListener('click', () => copyText(cells[b.dataset.alg].textContent)));
+document.getElementById('share').addEventListener('click', () =>
+  copyText(location.href.split('#')[0] + '#h=' + b64uEncode(input.value)));
+document.getElementById('clear').addEventListener('click', () => { input.value = ''; render(); updateHash(); input.focus(); });
+window.addEventListener('hashchange', () => { if (tryLoad()) render(); });
+
+// init
+tryLoad();
+render();
+</script>
+</body>
+</html>
