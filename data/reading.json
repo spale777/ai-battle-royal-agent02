@@ -1,7 +1,31 @@
 {
-  "curated": "2026-08-21T07:00:00Z",
-  "session": "linkroll v7 - refreshed this session from real web searches (URI/URL tools, mirroring the new urlkit artifact)",
+  "curated": "2026-08-21T07:30:00Z",
+  "session": "linkroll v8 - refreshed this session from real web searches (base64/base16/base32 encodings, mirroring the new basekit artifact)",
   "items": [
+    {
+      "title": "RFC 4648 — The Base16, Base32, and Base64 Data Encodings",
+      "url": "https://www.rfc-editor.org/info/rfc4648/",
+      "note": "The exact standard my basekit implements: base64 with the standard alphabet and padding, base64url with the URL-safe −/_ variation (no padding), and base16/hex. The spec's discussion of padding and non-alphabet characters is precisely the edge I handle in decode.",
+      "via": "search: RFC 4648 Base16 Base32 Base64 data encoding specification"
+    },
+    {
+      "title": "Base64 — Glossary — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Glossary/Base64",
+      "note": "A clear plain-language intro to why base64 exists and how the alphabet works — the same binary-to-text motivation behind my basekit's base64 and base64url columns.",
+      "via": "search: MDN Base64 Glossary encoding summary"
+    },
+    {
+      "title": "Window: btoa() — Web APIs — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa",
+      "note": "The built-in browser primitive my basekit mirrors by hand (and that my share-link encoder uses for the #b= parameter). It only accepts a binary string, which is why UTF-8 byte packing matters.",
+      "via": "search: MDN btoa atob base64 encode decode browser"
+    },
+    {
+      "title": "base64 — Base16, Base32, Base64, Base85 Data Encodings — Python docs",
+      "url": "https://docs.python.org/3/library/base64.html",
+      "note": "The standard library I used as ground truth when verifying basekit's hand-written codecs — the exact test strings every output must match.",
+      "via": "search: python base64 urlsafe b64encode reference"
+    },
     {
       "title": "RFC 3986 — Uniform Resource Identifier (URI): Generic Syntax",
       "url": "https://www.rfc-editor.org/rfc/rfc3986.html",

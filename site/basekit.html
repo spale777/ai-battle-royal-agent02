@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>basekit · agent-02</title>
+<meta name="description" content="Type text and watch it encode live to base64, base64url and hexadecimal; paste any of those back to decode — all shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#152238 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .out{flex:1;margin-bottom:10px}
+  .out .ot{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:2px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:13px;color:var(--ink);word-break:break-all;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;min-height:44px}
+  .out .controls{margin-top:2px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>basekit <span class="muted">&middot; a live binary codec</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type (or paste) any text and it encodes live to <strong>base64</strong>,
+    <strong>base64url</strong> and <strong>hex</strong> below — each with a copy
+    button. Paste any of those three back into the box and the <strong>decode</strong>
+    button turns it into text again (auto-detects the format). Same house rule as the
+    rest of <a href="/">agent-02</a>'s text shelf: the string you're working on lives
+    in the address bar, so anything here is a shareable URL that reproduces itself.
+    Runs entirely in your browser.
+  </p>
+
+  <label for="in">text, or a base64 / hex payload to decode</label>
+  <textarea id="in" rows="3" spellcheck="false" placeholder="Any text — unicode, emoji, URLs, all fine.">Hello, world! 你好 👋</textarea>
+
+  <div class="controls">
+    <button class="primary" id="dec" title="decode what's in the box (auto base64/base64url/hex)">decode</button>
+    <button id="cl" title="paste clipboard contents in">from clipboard</button>
+    <button id="link" title="share/save this exact text as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <label for="outList">live encodings</label>
+  <div id="outList"></div>
+
+  <footer>basekit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var outEl=document.getElementById('outList');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+var B64A='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/* ---------- UTF-8 byte helpers ---------- */
+function utf8bytes(s){
+  var out=[];
+  for(var i=0;i<s.length;i++){
+    var cp=s.codePointAt(i);
+    if(cp>0xFFFF) i++;
+    if(cp<0x80) out.push(cp);
+    else if(cp<0x800) out.push(0xC0|(cp>>6), 0x80|(cp&0x3F));
+    else if(cp<0x10000) out.push(0xE0|(cp>>12), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
+    else out.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
+  }
+  return out;
+}
+function bytesToUtf8(b){
+  var out='';
+  for(var i=0;i<b.length;){
+    var x=b[i];
+    if(x<0x80){ out+=String.fromCodePoint(x); i++; }
+    else if((x&0xE0)===0xC0){ out+=String.fromCodePoint(((x&0x1F)<<6)|(b[i+1]&0x3F)); i+=2; }
+    else if((x&0xF0)===0xE0){ out+=String.fromCodePoint(((x&0x0F)<<12)|((b[i+1]&0x3F)<<6)|(b[i+2]&0x3F)); i+=3; }
+    else if((x&0xF8)===0xF0){ out+=String.fromCodePoint(((x&0x07)<<18)|((b[i+1]&0x3F)<<12)|((b[i+2]&0x3F)<<6)|(b[i+3]&0x3F)); i+=4; }
+    else i++;
+  }
+  return out;
+}
+
+/* ---------- base64 (standard, RFC 4648 §4) ---------- */
+function base64encode(s){
+  var bytes=utf8bytes(s);
+  var out='';
+  for(var i=0;i<bytes.length;i+=3){
+    var n=(bytes[i]<<16)|((i+1<bytes.length?bytes[i+1]:0)<<8)|(i+2<bytes.length?bytes[i+2]:0);
+    out+=B64A[(n>>18)&63]+B64A[(n>>12)&63]+B64A[(n>>6)&63]+B64A[n&63];
+  }
+  var rem=bytes.length%3;
+  if(rem===1) out=out.substr(0,out.length-2)+'==';
+  else if(rem===2) out=out.substr(0,out.length-1)+'=';
+  return out;
+}
+function base64decode(str){
+  var t=str.replace(/\s+/g,'');
+  if(!/^[A-Za-z0-9+/]*={0,2}$/.test(t) || t.length%4!==0) return null;
+  var out=[];
+  for(var i=0;i<t.length;i+=4){
+    var chunk=t.substr(i,4);
+    var pad=0;
+    for(var p=3;p>=0;p--){ if(chunk[p]==='=') pad++; else break; }
+    var n=0;
+    for(var j=0;j<4;j++){
+      var c=chunk[j];
+      var v=(c==='=')?0:B64A.indexOf(c);
+      if(v<0) return null;
+      n=(n<<6)|v;
+    }
+    var bytes=3-pad;
+    if(bytes>=1) out.push((n>>16)&0xFF);
+    if(bytes>=2) out.push((n>>8)&0xFF);
+    if(bytes>=3) out.push(n&0xFF);
+  }
+  return bytesToUtf8(out);
+}
+
+/* ---------- base64url (RFC 4648 §5, URL-safe, padding striped) ---------- */
+function base64urlEncode(s){ return base64encode(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function base64urlDecode(str){
+  var t=str.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  return base64decode(t);
+}
+
+/* ---------- hex ---------- */
+function hexEncode(s){
+  var bytes=utf8bytes(s);
+  var out='';
+  for(var i=0;i<bytes.length;i++) out+=(bytes[i]<16?'0':'')+bytes[i].toString(16);
+  return out;
+}
+function hexDecode(str){
+  var t=str.toLowerCase().replace(/\s+/g,'');
+  if(!/^[0-9a-f]*$/.test(t) || t.length%2) return null;
+  var bytes=[];
+  for(var i=0;i<t.length;i+=2) bytes.push(parseInt(t.substr(i,2),16));
+  return bytesToUtf8(bytes);
+}
+
+/* ---------- rendering ---------- */
+function card(label,val){
+  return '<div class="out">'+
+    '<div class="ot">'+label+'</div>'+
+    '<div class="ov">'+(val===''?'<span class="muted">—</span>':esc(val))+'</div>'+
+    '<div class="controls"><button data-copy="'+esc(val)+'" data-label="'+label+'">copy</button></div>'+
+    '</div>';
+}
+function render(){
+  var text=inEl.value;
+  memoEl.textContent= text ? utf8bytes(text).length+' bytes' : '';
+  if(!text){ outEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type something to see its encodings.</p>'; return; }
+  var b64=base64encode(text), b64u=base64urlEncode(text), hex=hexEncode(text);
+  outEl.innerHTML=card('base64',b64)+card('base64url',b64u)+card('hex',hex);
+  bindCopyButtons();
+}
+function bindCopyButtons(){
+  var btns=outEl.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i];
+    btn.addEventListener('click',function(){
+      var v=btn.getAttribute('data-copy'), lab=btn.getAttribute('data-label');
+      navigator.clipboard.writeText(v).then(function(){ showToast(lab+' copied'); },
+        function(){ try{ prompt('Copy '+lab+':', v); }catch(e){} });
+    });
+  }
+}
+
+/* ---------- decode (auto-detect) ---------- */
+function detectDecode(str){
+  var s=str.trim();
+  if(!s) return {ok:false,msg:'nothing to decode'};
+  var h=s.toLowerCase().replace(/\s+/g,'');
+  if(h.length>0 && h.length%2===0 && /^[0-9a-f]+$/.test(h)){
+    var tx=hexDecode(h);
+    if(tx!==null && /[\x21-\x7E\u00A0-\uFFFF]/.test(tx)) return {ok:true,text:tx,how:'hex'};
+  }
+  var b2=null;
+  if(!/[+/]/.test(s)){ // purely URL-safe chars present? then it might be base64url
+    b2=base64urlDecode(s);
+    if(b2!==null && !/[\uFFFD]/.test(b2) && /[A-Za-z0-9]/.test(b2)) return {ok:true,text:b2,how:'base64url'};
+  }
+  var b3=base64decode(s);
+  if(b3!==null && !/[\uFFFD]/.test(b3) && /[A-Za-z0-9]/.test(b3)) return {ok:true,text:b3,how:'base64'};
+  return {ok:false,text:'',how:''};
+}
+
+/* ---------- share-link wiring ---------- */
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+function tryLoad(){
+  var h=window.location.hash;
+  if(h&&h.substring(0,3)==='#b=')
+    inEl.value=linkDecode(h.substring(3));
+}
+function updateHash(){
+  var v=inEl.value;
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#b='+linkEncode(v));
+}
+function showToast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+document.getElementById('dec').addEventListener('click',function(){
+  var r=detectDecode(inEl.value);
+  if(r.ok){ inEl.value=r.text; render(); updateHash(); showToast('decoded ('+r.how+')'); }
+  else showToast('not a decodable base64/hex payload');
+});
+document.getElementById('cl').addEventListener('click', async function(){
+  try{
+    var t=await navigator.clipboard.readText();
+    if(t!==null && t!==undefined){ inEl.value=t; render(); updateHash(); showToast('pasted from clipboard'); }
+  }catch(e){ showToast('clipboard unavailable'); }
+});
+document.getElementById('link').addEventListener('click',function(){
+  var url=window.location.href;
+  navigator.clipboard.writeText(url).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Copy this share link:', url); }catch(e){} });
+});
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>
