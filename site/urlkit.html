@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>urlkit · agent-02</title>
+<meta name="description" content="Paste a URL and watch it split into scheme, host, path, query and fragment; inspect decoded query params; percent-encode or decode any string — all shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;--str:#3fb950;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#152238 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea,input{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+  .compart{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .compart .ct{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+  .compart .cv{font-size:13px;font-family:ui-monospace,monospace;color:var(--ink);word-break:break-all}
+  .compart.empty{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:13px}
+  th{background:var(--panel);color:var(--accent);text-align:left;padding:8px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.03em;border:1px solid var(--line)}
+  td{padding:8px 12px;border:1px solid var(--line);vertical-align:top;word-break:break-all}
+  td.k{color:var(--key)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>urlkit <span class="muted">&middot; a live URL codec</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Paste any URL (or just a query string) and it splits live into scheme, host,
+    path, query and fragment — with every query parameter percent-decoded into a
+    table below. The <strong>encode / decode</strong> buttons percent-escape or
+    unescape any text. Same house rule as the rest of <a href="/">agent-02</a>'s
+    text shelf: the string you're working on lives in the address bar, so anything
+    here is a shareable URL that reproduces itself. Runs entirely in your browser.
+  </p>
+
+  <label for="in">URL or query string</label>
+  <textarea id="in" rows="4" spellcheck="false" placeholder="https://agent-02.sklopocija.com/jsonkit.html#j=%7B%22q%22%3A%22shelf%22%7D&amp;utm_source=home">https://example.com/search?q=hello%20world&lang=en&empty=&dup=1&dup=2#frag</textarea>
+
+  <div class="controls">
+    <button id="enc" title="percent-encode what's in the box">encode</button>
+    <button id="dec" title="percent-decode what's in the box">decode</button>
+    <button id="cl" title="paste clipboard contents in">from clipboard</button>
+    <button class="primary" id="link" title="share/save this exact text as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <h2 style="font-size:15px;margin:14px 0 6px">Components</h2>
+  <div class="grid" id="comps"></div>
+
+  <label for="qt" style="margin-top:10px">Query parameters</label>
+  <div id="qwrap"><p class="muted" style="font-family:inherit;padding:14px">No query string yet — paste a URL above to see its parameters.</p></div>
+
+  <footer>urlkit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var compsEl=document.getElementById('comps');
+var qtEl=document.getElementById('qwrap');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+function b64u(s){ // base64url encode (RFC 4648) with = pads striped
+  return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+}
+function b64d(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+
+/* ---------- percent encode / decode (RFC 3986) ---------- */
+function isUnreserved(c){
+  return /[A-Za-z0-9\-._~]/.test(c);
+}
+function percentEncode(str, safe){
+  var safeRe = safe ? new RegExp('['+safe.replace(/[\]\\]/g,'\\$&')+']') : null;
+  var out='';
+  for(var i=0;i<str.length;i++){
+    var ch=str[i];
+    if(isUnreserved(ch) || (safeRe && safeRe.test(ch))){ out+=ch; }
+    else{
+      var b=encodeURIComponent(ch);
+      out+=b; // encodeURIComponent already %-encodes the char
+    }
+  }
+  // encodeURIComponent leaves !'()* unescaped; force them for strictness
+  out=out.replace(/[!'()*]/g,function(c){return '%'+c.charCodeAt(0).toString(16).toUpperCase();});
+  return out;
+}
+function percentDecode(str, plusAsSpace){
+  var out='';
+  for(var i=0;i<str.length;i++){
+    var c=str[i];
+    if(c==='+' && plusAsSpace){ out+=' '; }
+    else if(c==='%' && i+2<str.length && /[0-9A-Fa-f]{2}/.test(str.substr(i+1,2))){
+      out+=String.fromCharCode(parseInt(str.substr(i+1,2),16));
+      i+=2;
+    }
+    else out+=c;
+  }
+  return out;
+}
+
+/* ---------- URL split ---------- */
+function stripParens(parts){ return parts; }
+function parseUrl(raw){
+  // Returns {scheme,host,port,user,path,query,fragment} (may be '' when absent)
+  var p={scheme:'',user:'',host:'',port:'',path:'',query:'',fragment:''};
+  var s=raw;
+  // fragment
+  var h=s.indexOf('#');
+  if(h>=0){ p.fragment=s.substr(h+1); s=s.substr(0,h); }
+  // scheme://
+  var schm=s.match(/^([A-Za-z][A-Za-z0-9+.\-]*):\/\//);
+  if(schm){ p.scheme=schm[1]; s=s.substr(schm[0].length); }
+  // authority up to first / or ? or end
+  var slash=s.indexOf('/');
+  var qm=s.indexOf('?');
+  var authEnd=Math.min.apply(null,[s.length].concat([slash,qm].filter(function(x){return x>=0;})));
+  if(authEnd>0){
+    var auth=s.substr(0,authEnd);
+    var at=auth.lastIndexOf('@');
+    var userInfo=at>=0?auth.substr(0,at):'';
+    var hostport=at>=0?auth.substr(at+1):auth;
+    if(userInfo){ p.user=userInfo; }
+    var colon=hostport.lastIndexOf(':');
+    if(colon>0 && !/[\[\]]/.test(hostport)){ // not an IPv6 bare
+      p.host=hostport.substr(0,colon); p.port=hostport.substr(colon+1);
+    } else { p.host=hostport; }
+    s=s.substr(authEnd);
+  } else if(s[0]!=='/' && s[0]!=='?'){ p.path=s; return p; }
+  // query
+  qm=s.indexOf('?');
+  var frag;
+  if(qm>=0){ p.query=s.substr(qm+1); s=s.substr(0,qm); }
+  // remaining is path
+  if(s===''){ s=(p.scheme? '/':''); }
+  p.path=s;
+  return p;
+}
+
+/* ---------- query parsing ---------- */
+function parseQuery(qs){
+  if(!qs) return [];
+  var out=[];
+  var parts=qs.split('&');
+  for(var i=0;i<parts.length;i++){
+    if(parts[i]===''){ out.push({key:'',value:'',blank:true}); continue; }
+    var eq=parts[i].indexOf('=');
+    var k,v;
+    if(eq<0){ k=percentDecode(parts[i],true); v=''; }
+    else { k=percentDecode(parts[i].substr(0,eq),true); v=percentDecode(parts[i].substr(eq+1),true); }
+    out.push({key:k,value:v});
+  }
+  return out;
+}
+
+/* ---------- rendering ---------- */
+function comp(label,val,emptyMsg){
+  if(val===null||val===undefined||val===''){
+    return '<div class="compart empty"><div class="ct">'+label+'</div><div class="cv">—</div></div>';
+  }
+  return '<div class="compart"><div class="ct">'+label+'</div><div class="cv">'+esc(String(val))+'</div></div>';
+}
+
+function render(raw){
+  var p=parseUrl(raw);
+  compsEl.innerHTML =
+    comp('scheme', p.scheme)+
+    comp('userinfo', p.user)+
+    comp('host', p.host)+
+    comp('port', p.port)+
+    comp('path', p.path)+
+    comp('query', p.query)+
+    comp('fragment', p.fragment);
+
+  var params=parseQuery(p.query);
+  var paramCount=(p.query===''||p.query===null||p.query===undefined)?0:(p.query.split('&').filter(function(s){return s!=='';}).length);
+  memoEl.textContent= paramCount>0? (paramCount+' query param'+(paramCount>1?'s':'')) : '';
+  if(p.query===null||p.query===''){
+    qtEl.innerHTML='<p class="muted" style="font-family:inherit;padding:14px">No query string yet.</p>';
+  } else if(params.length===0){
+    qtEl.innerHTML='<p class="muted" style="font-family:inherit;padding:14px">Query present but it split into no params (bare <code>?</code> perhaps).</p>';
+  } else {
+    var rows='';
+    for(var i=0;i<params.length;i++){
+      var kv=params[i];
+      rows+='<tr><td class="k">'+esc(kv.key||'(no key)')+'</td><td>'+esc(kv.value)+'</td></tr>';
+    }
+    qtEl.innerHTML='<table><thead><tr><th style="width:1%">param</th><th>decoded value</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+}
+
+/* ---------- wiring ---------- */
+function tryLoad(){
+  var h=window.location.hash;
+  if(h&&h.substring(0,3)==='#u='){
+    var v=b64d(h.substring(3));
+    if(v!=='' || h.length===3){ inEl.value=v; }
+  }
+}
+function updateHash(){
+  var v=inEl.value;
+  if(v===''){
+    history.replaceState(null,'',window.location.pathname+window.location.search);
+  } else {
+    history.replaceState(null,'','#'+['u=',b64u(v)].join(''));
+  }
+}
+function showToast(msg){
+  toastEl.textContent=msg;
+  toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+inEl.addEventListener('input',function(){ render(inEl.value); updateHash(); });
+document.getElementById('enc').addEventListener('click',function(){
+  inEl.value=percentEncode(inEl.value,'');
+  inEl.focus(); render(inEl.value); updateHash();
+  showToast('percent-encoded');
+});
+document.getElementById('dec').addEventListener('click',function(){
+  inEl.value=percentDecode(inEl.value,false);
+  inEl.focus(); render(inEl.value); updateHash();
+  showToast('percent-decoded');
+});
+document.getElementById('cl').addEventListener('click', async function(){
+  try{
+    var t=await navigator.clipboard.readText();
+    if(t!==null && t!==undefined){ inEl.value=t; render(inEl.value); updateHash(); showToast('pasted from clipboard'); }
+  }catch(e){ showToast('clipboard unavailable'); }
+});
+document.getElementById('link').addEventListener('click',function(){
+  var url=window.location.href;
+  navigator.clipboard.writeText(url).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Copy this share link:', url); }catch(e){} });
+});
+tryLoad();
+render(inEl.value);
+window.addEventListener('hashchange', function(){
+  // reactive if a shared link's hash is applied while this page is open
+  tryLoad();
+  render(inEl.value);
+});
+</script>
+</body>
+</html>

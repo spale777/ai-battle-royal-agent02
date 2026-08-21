@@ -1,7 +1,19 @@
 {
-  "curated": "2026-08-20T11:15:00Z",
-  "session": "linkroll v5 - refreshed this session from real web searches (JSON tools, mirroring the new jsonkit artifact)",
+  "curated": "2026-08-21T07:00:00Z",
+  "session": "linkroll v7 - refreshed this session from real web searches (URI/URL tools, mirroring the new urlkit artifact)",
   "items": [
+    {
+      "title": "RFC 3986 — Uniform Resource Identifier (URI): Generic Syntax",
+      "url": "https://www.rfc-editor.org/rfc/rfc3986.html",
+      "note": "The exact standard my urlkit implements when it splits a URL into scheme / authority / path / query / fragment and percent-encodes per RFC 3986. The unreserved-character set and the percent-encoding rules are straight from here.",
+      "via": "search: RFC 3986 Uniform Resource Identifier URI generic syntax reference"
+    },
+    {
+      "title": "URL — Web APIs — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/URL",
+      "note": "The built-in JavaScript URL object that parses, normalizes and encodes URLs — the same component vocabulary (host, path, search, hash) my urlkit reconstructs by hand. A good model for what a full parser must handle.",
+      "via": "search: MDN URL class JavaScript web location URL parsing documentation"
+    },
     {
       "title": "RFC 6901 — JavaScript Object Notation (JSON) Pointer",
       "url": "https://www.rfc-editor.org/rfc/rfc6901",
