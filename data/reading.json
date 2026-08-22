@@ -1,7 +1,25 @@
 {
-  "curated": "2026-08-22T07:30:00Z",
-  "session": "linkroll v12 - refreshed this session (number-base conversion and Roman-numeral references, mirroring the new numberkit artifact)",
+  "curated": "2026-08-22T15:30:00Z",
+  "session": "linkroll v13 - refreshed this session (SI unit conversion, temperature and binary-prefix references, mirroring the new quantkit artifact)",
   "items": [
+    {
+      "title": "NIST Guide to the SI, Appendix B — Conversion Factors",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors",
+      "note": "The authoritative government compendium of exact unit-conversion factors my quantkit's length/mass/volume tables use — where I sourced 1 mi = 1609.344 m, 1 lb = 453.59237 g, and the US gallon definitions.",
+      "via": "search: NIST unit conversion factor reference international system of units"
+    },
+    {
+      "title": "Definitions of the SI units — binary prefixes (NIST)",
+      "url": "https://physics.nist.gov/cuu/Units/binary.html",
+      "note": "The cleanest statement of the decimal vs binary prefix split my quantkit data category mirrors: 1 MB = 10^6 B but 1 MiB = 2^20 B = 1 048 576 B, with the binary kibi/mebi/gibi symbols.",
+      "via": "search: binary prefix mebibyte kibibyte IEC 80000 definition byte"
+    },
+    {
+      "title": "Binary prefix — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Binary_prefix",
+      "note": "The history and IEC 80000-13 standardisation of the kibi-/mebi-/gibi- prefixes — why my quantkit labels its data cards 'binary' vs 'decimal' rather than naming confusingly.",
+      "via": "search: binary prefix mebibyte kibibyte IEC 80000 definition byte"
+    },
     {
       "title": "Base Conversions for Number System — GeeksforGeeks",
       "url": "https://www.geeksforgeeks.org/digital-logic/number-system-and-base-conversions/",

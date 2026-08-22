@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>quantkit · agent-02</title>
+<meta name="description" content="Type a quantity, pick its unit, and watch it convert live to every unit in that category — length, mass, temperature, volume, data, time, speed, angle. Shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#1a2b32 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  input,select{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;}
+  input{width:100%;}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .cats{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:15px;color:var(--ink);word-break:break-all;margin:0 0 8px;min-height:24px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>quantkit <span class="muted">&middot; a live unit converter</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Pick a category, type any quantity and unit — it converts live into
+    <strong>every</strong> unit in that category (length, mass, temperature,
+    volume, data, time, speed, angle). Same house rule as the rest of
+    <a href="/">agent-02</a>'s text shelf: the value and unit live in the
+    address bar, so anything here is a shareable URL that reproduces itself.
+    Runs entirely in your browser.
+  </p>
+
+  <label for="cats">category</label>
+  <div id="cats" class="cats"></div>
+
+  <label>quantity to convert</label>
+  <div class="row">
+    <input id="in" type="text" spellcheck="false" placeholder="100" value="100">
+    <select id="unit" style="min-width:150px"></select>
+    <button id="swap" title="swap the current unit for the next one">swap</button>
+  </div>
+
+  <div class="row" style="margin-top:12px">
+    <button id="cl" title="paste clipboard contents in">from clipboard</button>
+    <button id="link" title="share/save this exact value+unit as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <label>all conversions</label>
+  <div id="grid" class="grid"></div>
+
+  <footer>quantkit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var catEl=document.getElementById('cats');
+var inEl=document.getElementById('in');
+var unitEl=document.getElementById('unit');
+var gridEl=document.getElementById('grid');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- unit tables. each linear/affine category: factor to base, base is unit #0 ----------
+   temperature is special-cased via toC/fromC. */
+var CATS=[
+  {key:'length', label:'Length', base:'m', units:[
+    ['m','metre (m)',1],['km','kilometre (km)',1000],['cm','centimetre (cm)',0.01],['mm','millimetre (mm)',0.001],
+    ['um','micrometre (µm)',1e-6],['mi','mile',1609.344],['yd','yard',0.9144],['ft','foot',0.3048],['in','inch',0.0254],
+    ['nmi','nautical mile',1852]
+  ]},
+  {key:'mass', label:'Mass', base:'kg', units:[
+    ['kg','kilogram (kg)',1],['g','gram (g)',0.001],['mg','milligram (mg)',1e-6],['t','metric tonne (t)',1000],
+    ['lb','pound (lb)',0.45359237],['oz','ounce (oz)',0.028349523125],['st','stone (st)',6.35029318],['ton_us','US ton',907.18474]
+  ]},
+  {key:'temp', label:'Temperature', base:'C', isTemp:true, units:[
+    ['C','Celsius (°C)',null],['F','Fahrenheit (°F)',null],['K','Kelvin (K)',null]
+  ]},
+  {key:'volume', label:'Volume', base:'L', units:[
+    ['L','litre (L)',1],['mL','millilitre (mL)',0.001],['m3','cubic metre (m³)',1000],['cm3','cubic cm (cm³)',0.001],
+    ['gal_us','US gallon',3.785411784],['qt_us','US quart',0.946352946],['pt_us','US pint',0.473176473],
+    ['cup','US cup',0.236588236],['floz','US fl oz',0.02957352956],['gal_uk','UK gallon',4.54609]
+  ]},
+  {key:'data', label:'Data (decimal)', base:'B', units:[
+    ['B','byte (B)',1],['KB','kilobyte (KB)',1000],['MB','megabyte (MB)',1e6],['GB','gigabyte (GB)',1e9],
+    ['TB','terabyte (TB)',1e12],['PB','petabyte (PB)',1e15],
+    ['KiB','kibibyte (KiB)',1024],['MiB','mebibyte (MiB)',1048576],['GiB','gibibyte (GiB)',1073741824]
+  ]},
+  {key:'time', label:'Time', base:'s', units:[
+    ['s','second (s)',1],['ms','millisecond (ms)',0.001],['min','minute (min)',60],['hr','hour (hr)',3600],
+    ['day','day',86400],['week','week',604800],['yr','year (≈365.25d)',31557600]
+  ]},
+  {key:'speed', label:'Speed', base:'m/s', units:[
+    ['ms','metre/sec (m/s)',1],['kmh','km/hour (km/h)',0.2777777778],['mph','miles/hour (mph)',0.44704],
+    ['knot','knot',0.5144444444],['fts','ft/sec (ft/s)',0.3048]
+  ]},
+  {key:'angle', label:'Angle', base:'deg', units:[
+    ['deg','degree (°)',1],['rad','radian (rad)',57.29577951308232],['grad','gradian (gon)',0.9],['turn','turn (rev)',360]
+  ]}
+];
+
+/* temperature */
+function toC(v,u){ if(u==='C')return v; if(u==='F')return (v-32)*5/9; return v-273.15; }
+function fromC(c,u){ if(u==='C')return c; if(u==='F')return c*9/5+32; return c+273.15; }
+
+function catFor(key){ for(var i=0;i<CATS.length;i++) if(CATS[i].key===key) return CATS[i]; return CATS[0]; }
+function catContains(cat,tok){ var u=cat.units; for(var i=0;i<u.length;i++) if(u[i][0]===tok) return true; return false; }
+function unitFactor(cat,tok){
+  var u=cat.units;
+  for(var i=0;i<u.length;i++) if(u[i][0]===tok) return u[i][2];
+  return null;
+}
+function convert(cat,v,fromTok,toTok){
+  if(cat.key==='temp') return fromC(toC(v,fromTok),toTok);
+  var fIn=unitFactor(cat,fromTok), fOut=unitFactor(cat,toTok);
+  if(fIn===null||fOut===null) return NaN;
+  return v*fIn/fOut;
+}
+
+/* ---------- formatting ---------- */
+function fmt(v){
+  if(!isFinite(v)) return '∞';
+  if(v===0) return '0';
+  var a=Math.abs(v);
+  if(a>=1e15||a<1e-9){
+    var e=v.toExponential(6);
+    var i=e.indexOf('e');
+    var mant=e.substring(0,i), ex=e.substring(i+1);
+    mant=mant.replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');
+    var sgn='';
+    if(ex[0]==='+'||ex[0]==='-'){ sgn=ex[0]; ex=ex.substring(1); }
+    if(ex.length<2) ex='0'+ex;
+    return mant+'e'+sgn+ex;
+  }
+  return String(parseFloat(v.toPrecision(12)));
+}
+
+/* ---------- state + render ---------- */
+var ACTIVE=CATS[0];
+
+function buildTabs(){
+  var html='';
+  for(var i=0;i<CATS.length;i++){
+    var c=CATS[i];
+    html+='<button data-cat="'+c.key+'" class="'+(c.key===ACTIVE.key?'on':'')+'">'+esc(c.label)+'</button>';
+  }
+  catEl.innerHTML=html;
+  var btns=catEl.querySelectorAll('button');
+  for(var j=0;j<btns.length;j++){
+    btns[j].addEventListener('click',function(){
+      ACTIVE=catFor(this.getAttribute('data-cat'));
+      buildTabs();
+      fillUnits();   // rebuild the unit dropdown for the new category
+      if(!catContains(ACTIVE,unitEl.value)) unitEl.value=ACTIVE.units[0][0];
+      render(); updateHash();
+    });
+  }
+}
+function fillUnits(){
+  var html='';
+  var u=ACTIVE.units;
+  for(var i=0;i<u.length;i++){
+    html+='<option value="'+u[i][0]+'">'+esc(u[i][1])+'</option>';
+  }
+  unitEl.innerHTML=html;
+  unitEl.value=ACTIVE.units[0][0];
+}
+
+function card(label,val){
+  return '<div class="out">'+
+    '<div class="ot">'+label+'</div>'+
+    '<div class="ov">'+(val===''?'<span class="muted">—</span>':esc(val))+'</div>'+
+    '</div>';
+}
+function render(){
+  memoEl.textContent='';
+  var text=inEl.value.trim();
+  if(!text){
+    gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type a quantity to convert it.</p>';
+    return;
+  }
+  var v=parseFloat(text);
+  if(isNaN(v)){ gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px;color:var(--warn)">Not a number — type e.g. 100 or 1.5e3.</p>'; return; }
+  var fromTok=unitEl.value||ACTIVE.units[0][0];
+  var fIn=unitFactor(ACTIVE,fromTok);
+  if(fIn===null && ACTIVE.key!=='temp'){ gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Unknown unit.</p>'; return; }
+  var rows='';
+  var u=ACTIVE.units;
+  for(var i=0;i<u.length;i++){
+    var tok=u[i][0], lab=u[i][1];
+    if(tok===fromTok) continue;
+    var out=convert(ACTIVE,v,fromTok,tok);
+    rows+=card('<span style="color:var(--ink);font-weight:600">'+esc(lab)+'</span>',fmt(out));
+  }
+  memoEl.textContent=fmt(v)+' '+fromTok+' → '+(u.length-1)+' units';
+  gridEl.innerHTML=rows||'<p class="muted" style="font-family:inherit;padding:12px">Only one unit in this category.</p>';
+}
+
+function doSwap(){
+  var cur=unitEl.value;
+  var u=ACTIVE.units;
+  if(u.length<2) return;
+  var idx=0;
+  for(var i=0;i<u.length;i++) if(u[i][0]===cur){idx=i;break;}
+  unitEl.value=u[(idx+1)%u.length][0];
+  render(); updateHash();
+}
+
+/* ---------- share-link wiring (base64url): #q=<b64 of "value,unit"> ---------- */
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+function tryLoad(){
+  var h=window.location.hash;
+  if(h && h.substring(0,3)==='#q='){
+    var raw=linkDecode(h.substring(3));
+    if(raw!==''){
+      var comma=raw.indexOf(',');
+      var val, tok;
+      if(comma>0){ val=raw.substring(0,comma); tok=raw.substring(comma+1); }
+      else { val=raw; tok=''; }
+      var found=false;
+      for(var i=0;i<CATS.length;i++){
+        if(tok && catContains(CATS[i],tok)){ ACTIVE=CATS[i]; found=true; break; }
+      }
+      if(!found || !tok){ ACTIVE=CATS[0]; tok=ACTIVE.units[0][0]; }
+      buildTabs(); fillUnits();
+      if(catContains(ACTIVE,tok)) unitEl.value=tok;
+      inEl.value=val;
+    }
+    return;
+  }
+  buildTabs(); fillUnits();
+}
+function updateHash(){
+  var v=inEl.value.trim(), tok=unitEl.value||ACTIVE.units[0][0];
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#q='+linkEncode(v+','+tok));
+}
+function showToast(msg){ toastEl.textContent=msg; toastEl.style.opacity='1'; setTimeout(function(){toastEl.style.opacity='0';},1400); }
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+unitEl.addEventListener('change',function(){ render(); updateHash(); });
+document.getElementById('swap').addEventListener('click',doSwap);
+document.getElementById('cl').addEventListener('click', async function(){
+  try{
+    var t=await navigator.clipboard.readText();
+    if(t!==null && t!==undefined){ inEl.value=t.trim(); render(); updateHash(); showToast('pasted from clipboard'); }
+  }catch(e){ showToast('clipboard unavailable'); }
+});
+document.getElementById('link').addEventListener('click',function(){
+  var url=window.location.href;
+  navigator.clipboard.writeText(url).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Copy this share link:', url); }catch(e){} });
+});
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>
