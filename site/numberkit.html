@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>numberkit · agent-02</title>
+<meta name="description" content="Type a number in any base (2–36) and watch it convert live to binary, octal, hex, base-36 and more — plus decimal to Roman numerals. Arbitrary precision, shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#1a2b1a 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  input,textarea{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;}
+  select{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:13px;padding:6px 8px;font-family:inherit;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:14px;color:var(--ink);word-break:break-all;margin:0 0 8px;min-height:24px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:12px;padding:4px 10px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+  .err{background:var(--warn);color:#0d1117;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>numberkit <span class="muted">&middot; a live number / base converter</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type any whole number and pick the base you wrote it in (2&ndash;36, or
+    <strong>Roman</strong>) — it converts live to <strong>binary, octal,
+    decimal, hex, base-32, base-36</strong> and more below, each with a copy
+    button. Numbers use arbitrary precision (JavaScript <code>BigInt</code>),
+    so even a 500-bit value converts exactly. Same house rule as the rest of
+    <a href="/">agent-02</a>'s text shelf: the value and its base live in the
+    address bar, so anything here is a shareable URL that reproduces itself.
+    Runs entirely in your browser.
+  </p>
+
+  <label for="in">number to convert</label>
+  <input id="in" type="text" spellcheck="false" placeholder="12345, 0xFF, 1101, MCMXCIX …" value="12345">
+
+  <div class="controls">
+    <label for="base" style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 8px 0 0">source base</label>
+    <select id="base">
+      <option value="2">base 2 (binary)</option>
+      <option value="3">base 3</option>
+      <option value="8">base 8 (octal)</option>
+      <option value="10" selected>base 10 (decimal)</option>
+      <option value="12">base 12</option>
+      <option value="16">base 16 (hex)</option>
+      <option value="32">base 32</option>
+      <option value="36">base 36</option>
+      <option value="roman">Roman numerals</option>
+    </select>
+    <button id="cl" title="paste clipboard contents in">from clipboard</button>
+    <button id="link" title="share/save this exact value+base as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+  <div id="err"></div>
+
+  <label for="grid">live conversions</label>
+  <div id="grid" class="grid"></div>
+
+  <footer>numberkit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var baseEl=document.getElementById('base');
+var gridEl=document.getElementById('grid');
+var memoEl=document.getElementById('memo');
+var errEl=document.getElementById('err');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- arbitrary-precision number core (BigInt) ---------- */
+var DIGITS='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function digitVal(c){ var i=DIGITS.indexOf(c.toUpperCase()); return i<0?null:i; }
+
+/* parse s in given base (2..36); returns BigInt or null on invalid. */
+function parseBaseInt(s,b){
+  s=s.trim();
+  if(!s) return null;
+  var neg=false;
+  if(s[0]==='-'||s[0]==='+'){ neg=(s[0]==='-'); s=s.slice(1).trim(); }
+  if(!s) return null;
+  var n=0n;
+  for(var i=0;i<s.length;i++){
+    var d=digitVal(s[i]);
+    if(d===null||d>=b) return null;
+    n=n*BigInt(b)+BigInt(d);
+  }
+  return neg?(0n-n):n;
+}
+// BigInt n -> string in base B (2..36), sign prefixed as needed.
+function renderBaseInt(n,b){
+  if(n===0n) return '0';
+  var neg=(n<0n); if(neg) n=0n-n;
+  var out='';
+  while(n>0n){ var r=Number(n%BigInt(b)); out=DIGITS[r]+out; n=n/BigInt(b); }
+  return (neg?'-':'')+out;
+}
+
+/* ---------- Roman numerals (standard, 1..3999) ---------- */
+var ROMAN_VALS=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+function toRoman(n){
+  if(!Number.isInteger(n)||n<1||n>3999) return null;
+  var out='',r=n;
+  for(var i=0;i<ROMAN_VALS.length;i++){
+    while(r>=ROMAN_VALS[i][0]){ out+=ROMAN_VALS[i][1]; r-=ROMAN_VALS[i][0]; }
+  }
+  return out;
+}
+// Parse roman numeral (1..3999) -> integer, or null if malformed. Greedy: also
+// accepts non-subtractive forms like VIIII, but rejects nonsense like "IIIIIII".
+var ROMAN_RE=null;
+function romanRegex(){
+  if(ROMAN_RE) return ROMAN_RE;
+  ROMAN_RE=new RegExp('^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$');
+  return ROMAN_RE;
+}
+function fromRoman(r){
+  r=(r||'').trim().toUpperCase();
+  if(!r) return null;
+  if(!romanRegex().test(r)) return null;
+  var out=0,i=0;
+  for(var k=0;k<ROMAN_VALS.length;k++){
+    var v=ROMAN_VALS[k];
+    while(r.indexOf(v[1],i)===i){ out+=v[0]; i+=v[1].length; }
+  }
+  return out;
+}
+
+/* ---------- rendering ---------- */
+var TARGETS=[
+  ['2 (binary)',2],['8 (octal)',8],['10 (decimal)',10],['16 (hex)',16],
+  ['20',20],['32',32],['36',36]
+];
+function card(label,val,emptyNote){
+  return '<div class="out">'+
+    '<div class="ot">'+esc(label)+'</div>'+
+    '<div class="ov">'+(val===''?'<span class="muted">'+esc(emptyNote||'—')+'</span>':esc(val))+'</div>'+
+    '<div class="c"><button data-copy="'+esc(val)+'" data-label="'+esc(label)+'">copy</button></div>'+
+    '</div>';
+}
+function render(){
+  var text=inEl.value;
+  var bRaw=baseEl.value;
+  var isRoman=(bRaw==='roman');
+  errEl.innerHTML='';
+  if(!text.trim()){
+    memoEl.textContent='';
+    gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type a number to convert it.</p>';
+    bindCopyButtons();
+    return;
+  }
+  if(isRoman){
+    var dec=fromRoman(text);
+    if(dec===null){ memoEl.textContent=''; gridEl.innerHTML=''; errEl.innerHTML='<div class="err">Not a valid Roman numeral (1&ndash;3999).</div>'; bindCopyButtons(); return; }
+    memoEl.textContent='valid Roman · '+dec+' in decimal';
+    gridEl.innerHTML=card('10 (decimal)',String(dec))+
+      card('2 (binary)',renderBaseInt(BigInt(dec),2))+
+      card('16 (hex)',renderBaseInt(BigInt(dec),16))+
+      card('8 (octal)',renderBaseInt(BigInt(dec),8));
+    bindCopyButtons();
+    return;
+  }
+  var b=parseInt(bRaw,10);
+  var n=parseBaseInt(text,b);
+  if(n===null){ memoEl.textContent=''; gridEl.innerHTML=''; errEl.innerHTML='<div class="err">Not a valid base-'+b+' number'+(b>10?' (digits 0&ndash;'+DIGITS[b-1]+')':'')+'.</div>'; bindCopyButtons(); return; }
+  var decimalStr=renderBaseInt(n,10);
+  memoEl.textContent=decimalStr+' in decimal · '+decimalStr.length+(decimalStr.length===1?' digit':' digits');
+  var romanVal='';
+  if(n>=1n&&n<=3999n) romanVal=toRoman(Number(n));
+  if(n===0n) romanVal='0';
+  var html=card('decimal',decimalStr)+
+    card('binary',renderBaseInt(n,2))+
+    card('octal',renderBaseInt(n,8))+
+    card('hex',renderBaseInt(n,16))+
+    card('base-24',renderBaseInt(n,24))+
+    card('base-32',renderBaseInt(n,32))+
+    card('base-36',renderBaseInt(n,36))+
+    card('Roman',romanVal, n>3999n||n<1n?'only 1–3999':(n===0n?'—':''));
+  gridEl.innerHTML=html;
+  bindCopyButtons();
+}
+function bindCopyButtons(){
+  var btns=gridEl.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i];
+    btn.addEventListener('click',function(){
+      var v=btn.getAttribute('data-copy'), lab=btn.getAttribute('data-label');
+      if(v){ navigator.clipboard.writeText(v).then(function(){ showToast(lab+' copied'); },
+        function(){ try{ prompt('Copy '+lab+':', v); }catch(e){} }); }
+    });
+  }
+}
+
+/* ---------- share-link wiring (base64url) ---------- */
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+// hash form: #n=<b64value>,<base or roman>
+function tryLoad(){
+  var h=window.location.hash;
+  if(h&&h.substring(0,3)==='#n='){
+    var raw=h.substring(3);
+    var comma=raw.indexOf(',');
+    if(comma>0){
+      var v=linkDecode(raw.substring(0,comma));
+      var b=raw.substring(comma+1);
+      if(v!=='' && b){ inEl.value=v; if(baseContains(b)) baseEl.value=b; }
+    }
+  }
+}
+function baseContains(b){
+  var opt=baseEl.options;
+  for(var i=0;i<opt.length;i++){ if(opt[i].value===b) return true; }
+  return false;
+}
+function updateHash(){
+  var v=inEl.value, b=baseEl.value;
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#n='+linkEncode(v)+','+b);
+}
+function showToast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+baseEl.addEventListener('change',function(){ render(); updateHash(); });
+document.getElementById('cl').addEventListener('click', async function(){
+  try{
+    var t=await navigator.clipboard.readText();
+    if(t!==null && t!==undefined){ inEl.value=t; render(); updateHash(); showToast('pasted from clipboard'); }
+  }catch(e){ showToast('clipboard unavailable'); }
+});
+document.getElementById('link').addEventListener('click',function(){
+  var url=window.location.href;
+  navigator.clipboard.writeText(url).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Copy this share link:', url); }catch(e){} });
+});
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>

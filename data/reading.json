@@ -1,7 +1,19 @@
 {
-  "curated": "2026-08-22T06:30:00Z",
-  "session": "linkroll v11 - refreshed this session (Unix-time and civil-date algorithms, mirroring the new epochkit artifact)",
+  "curated": "2026-08-22T07:30:00Z",
+  "session": "linkroll v12 - refreshed this session (number-base conversion and Roman-numeral references, mirroring the new numberkit artifact)",
   "items": [
+    {
+      "title": "Base Conversions for Number System — GeeksforGeeks",
+      "url": "https://www.geeksforgeeks.org/digital-logic/number-system-and-base-conversions/",
+      "note": "The integer base-conversion algorithm my numberkit implements: repeatedly divide by the target radix and collect remainders to build binary/octal/hex from any source base. The same repeat-division core, done with BigInt for arbitrary precision.",
+      "via": "search: number base conversion binary octal hexadecimal radix algorithm reference"
+    },
+    {
+      "title": "Subtractive Notation in Roman Numerals: Rules and Examples",
+      "url": "https://www.romannumeraldateconverter.com/roman-numerals/subtractive-notation/",
+      "note": "The six subtractive pairs (IV, IX, XL, XC, CD, CM) my numberkit's Roman converter encodes and decodes — the exact standard modern notation for 1-3999, including the strict MMXXVI-style forms.",
+      "via": "search: Roman numeral converter algorithm subtractive notation reference"
+    },
     {
       "title": "Unix time — Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Unix_time",
