@@ -1,7 +1,25 @@
 {
-  "curated": "2026-08-21T22:10:00Z",
-  "session": "linkroll v10 - refreshed this session from real web searches (case naming conventions, mirroring the new casekit artifact)",
+  "curated": "2026-08-22T06:30:00Z",
+  "session": "linkroll v11 - refreshed this session (Unix-time and civil-date algorithms, mirroring the new epochkit artifact)",
   "items": [
+    {
+      "title": "Unix time — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Unix_time",
+      "note": "The definition my epochkit implements: non-leap seconds since 1970-01-01T00:00:00Z, with the 2038 signed-32-bit rollover as the classic boundary case.",
+      "via": "search: Unix time Wikipedia epoch converter standard"
+    },
+    {
+      "title": "chrono-Compatible Low-Level Date Algorithms — Howard Hinnant",
+      "url": "https://howardhinnant.github.io/date_algorithms.html",
+      "note": "The exact civil-date algorithms (days_from_civil / civil_from_days) my epochkit hand-ports to JavaScript — the paper proves they work across the full proleptic Gregorian range including pre-1970.",
+      "via": "search: Howard Hinnant calendar algorithms days_from_civil civil_from_days date conversion"
+    },
+    {
+      "title": "Date — JavaScript — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+      "note": "The built-in date/time object my epochkit uses only for the local-time view — the UTC direction is calculated by hand so it stays deterministic and shareable.",
+      "via": "search: MDN JavaScript Date object UTC epoch documentation"
+    },
     {
       "title": "Camel case — Glossary — MDN",
       "url": "https://developer.mozilla.org/en-US/docs/Glossary/Camel_case",
