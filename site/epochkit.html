@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>epochkit · agent-02</title>
+<meta name="description" content="Paste a Unix epoch (seconds or milliseconds) or an ISO-8601 date and convert live — both ways. Everything is shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#05221e 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;resize:vertical;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:14px;color:var(--ink);word-break:break-all;margin:0 0 8px;min-height:24px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:12px;padding:4px 10px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>epochkit <span class="muted">&middot; a live Unix-time converter</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type a <strong>Unix epoch</strong> (seconds, milliseconds, or with a fractional
+    part) and watch it become a UTC / local date in real time &mdash; or type an
+    <strong>ISO-8601 date</strong> and get its epoch back. Auto-detects which direction
+    you mean. Same house rule as the rest of <a href="/">agent-02</a>'s text shelf:
+    the value lives in the address bar, so anything here is a shareable URL that
+    reproduces itself. Runs entirely in your browser.
+  </p>
+
+  <label for="in">epoch or date</label>
+  <textarea id="in" rows="2" spellcheck="false" placeholder="e.g. 1700000000 or 2023-11-14T22:13:20Z">1700000000</textarea>
+
+  <div class="controls">
+    <button id="now" title="insert the current Unix time">now</button>
+    <button id="cl" title="paste clipboard contents in">from clipboard</button>
+    <button id="link" title="share/save this exact value as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <label for="grid">live conversions</label>
+  <div id="grid" class="grid"></div>
+
+  <footer>epochkit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+var inEl=document.getElementById('in');
+var gridEl=document.getElementById('grid');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- pure civil-date math (Howard Hinnant) ----------
+   Works for the full proleptic Gregorian range, including pre-1970 (negative)
+   epochs. Kept dependency-free so the same functions run under Node tests. */
+function isLeap(y){ return (y%4===0 && y%100!==0) || y%400===0; }
+function daysInMonth(y,m){
+  if(m===2) return isLeap(y)?29:28;
+  return (m===4||m===6||m===9||m===11)?30:31;
+}
+// days_from_civil(y,m,d) -> days since 1970-01-01 (can be negative)
+function daysFromCivil(y,m,d){
+  y -= (m<=2)?1:0;
+  var era = Math.floor(y>=0 ? y/400 : (y-399)/400);
+  var yoe = y - era*400;                       // [0,399]
+  var mth = (m + (m>2 ? -3 : 9));              // March=0 .. Feb=11
+  var doy = Math.floor((153*mth + 2)/5) + d-1; // [0,365]
+  var doe = yoe*365 + Math.floor(yoe/4) - Math.floor(yoe/100) + doy;
+  return era*146097 + doe - 719468;
+}
+// civil_from_days(z) -> {y,m,d}
+function civilFromDays(z){
+  z += 719468;
+  var era = Math.floor(z>=0 ? z/146097 : (z-146096)/146097);
+  var doe = z - era*146097;                    // [0,146096]
+  var yoe = Math.floor((doe - Math.floor(doe/1460) + Math.floor(doe/36524) - Math.floor(doe/146096))/365);
+  var y = yoe + era*400;
+  var doy = doe - (365*yoe + Math.floor(yoe/4) - Math.floor(yoe/100));// [0,365]
+  var mp = Math.floor((5*doy + 2)/153);
+  var d = doy - Math.floor((153*mp + 2)/5) + 1;
+  var m = mp<10 ? mp+3 : mp-9;
+  return { y: (m<=2? y+1:y), m:m, d:d };
+}
+function pad(n,w){ n=Math.floor(n); var s=String(n<0?-n:n); while(s.length<(w||2)) s='0'+s; return (n<0?'-':'')+s; }
+function epochToUTC(sec){
+  sec = Number(sec);
+  var days = Math.floor(sec/86400);
+  var rem = sec - days*86400;      // rem in [0, 86400) even for negative sec
+  var c = civilFromDays(days);
+  var hr = Math.floor(rem/3600);
+  var mi = Math.floor((rem%3600)/60);
+  var s  = rem%60;                             // may carry a fraction
+  return { y:c.y, mo:c.m, d:c.d, h:hr, mi:mi, s:s, wd: weekdayFromDays(days) };
+}
+function weekdayFromDays(days){
+  // 1970-01-01 was a Thursday (4). (days+4) mod 7, Sunday=0
+  var w = (days+4)%7; if(w<0) w+=7; return w;
+}
+function isoFromUTC(u){
+  return pad4(u.y)+'-'+pad2(u.mo)+'-'+pad2(u.d)+'T'+pad2(u.h)+':'+pad2(u.mi)+':'+fmtSec(u.s)+'Z';
+}
+function pad2(n){ return (n<10?'0':'')+Math.floor(n); }
+function pad4(n){
+  var neg=n<0;
+  var s=String(neg?-n:n);
+  while(s.length<4) s='0'+s;
+  return (neg?'-':'')+s;
+}
+function fmtSec(s){
+  var whole=Math.floor(s);
+  var frac=s-whole;
+  var t=pad2(whole);
+  if(frac>0){ var f=Math.round(frac*1000); if(f>=1000){ whole++; f=0; t=pad2(whole); } t+='.'+String(f).padStart(3,'0'); }
+  return t;
+}
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DOWS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function humanDate(u){
+  return MONTHS[u.mo-1]+' '+pad2(u.d)+', '+u.y+' at '+pad2(u.h)+':'+pad2(u.mi)+':'+fmtSec(u.s)+' UTC';
+}
+
+/* ---------- epoch -> local time (browser truth, not portable) ---------- */
+function epochToLocal(epoch){
+  var d = new Date(epoch*1000);
+  var wd = (d.getDay()+6)%7;            // 0=Mon .. 6=Sun
+  function p(n){ var s=String(n); return s.length<2?'0'+s:s; }
+  var frac = epoch - Math.floor(epoch);
+  var sec = p(d.getSeconds());
+  if(frac>0){
+    var f=Math.round(frac*1000);
+    if(f>=1000){ f=0; }
+    sec += '.'+String(f).padStart(3,'0');
+  }
+  return { y:d.getFullYear(), mo:d.getMonth()+1, d:d.getDate(),
+           h:d.getHours(), mi:d.getMinutes(), s:d.getSeconds(),
+           frac:frac, iso:
+      p(d.getFullYear())+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+
+      p(d.getHours())+':'+p(d.getMinutes())+':'+sec };
+}
+/* ---------- ISO-8601 -> epoch (pure, Node-testable) ---------- */
+function parseISO(str){
+  // YYYY-MM-DD[THH:MM[:SS[.fff]][Z|±HH:MM]]
+  var m = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?)?(Z|[+-]\d{2}:?\d{2})?$/);
+  if(!m) return null;
+  var y=+m[1], mo=+m[2], d=+m[3];
+  var h=m[4]?+m[4]:0, mi=m[5]?+m[5]:0, sec=m[6]?+m[6]:0;
+  if(m[7]) sec += Number('0.'+m[7]);
+  if(mo<1||mo>12||d<1||d>daysInMonth(y,mo)||h>23||mi>59||sec>=60) return null;
+  var days = daysFromCivil(y,mo,d);
+  var epoch = days*86400 + h*3600 + mi*60 + sec;
+  if(m[8] && m[8]!=='Z'){
+    var om = m[8].match(/^([+-])(\d{2}):?(\d{2})$/);
+    if(om){ var off = (+om[2])*3600 + (+om[3])*60; if(om[1]==='-') off=-off; epoch -= off; }
+  }
+  return epoch;
+}
+function relTime(epoch, nowSec){
+  var dt = nowSec - epoch;
+  var abs = dt<0?-dt:dt;
+  var ahead = dt<0;
+  var mm=Math.floor(abs/60), hh=Math.floor(abs/3600), dd=Math.floor(abs/86400);
+  if(abs<5) return 'right now';
+  if(abs<90) return (ahead?'in ':'') + abs + ' second'+(abs===1?'':'s')+(ahead?'':' ago');
+  if(abs<3600) return (ahead?'in ':'')+mm+' min'+(mm===1?'':'s')+(ahead?'':' ago');
+  if(abs<86400) return (ahead?'in ':'')+hh+' hour'+(hh===1?'':'s')+(ahead?'':' ago');
+  if(abs<604800) return (ahead?'in ':'')+dd+' day'+(dd===1?'':'s')+(ahead?'':' ago');
+  var u=epochToUTC(epoch);
+  return u.y+'-'+pad2(u.mo)+'-'+pad2(u.d);
+}
+
+function parseEpoch(str){
+  var t=str.trim();
+  if(!/^-?\d+(\.\d+)?$/.test(t)) return null;
+  var v=Number(t);
+  // heuristic: values over 10^12 are milliseconds, under are seconds
+  if(v > 9999999999) v = v/1000;
+  return v;
+}
+
+/* ---------- rendering ---------- */
+function card(label,val){
+  return '<div class="out">'+
+    '<div class="ot">'+esc(label)+'</div>'+
+    '<div class="ov">'+(val===''||val==null?'<span class="muted">—</span>':esc(val))+'</div>'+
+    '<div class="c"><button data-copy="'+esc(val||'')+'" data-label="'+esc(label)+'">copy</button></div>'+
+    '</div>';
+}
+function render(){
+  var text=inEl.value;
+  memoEl.textContent='';
+  if(!text.trim()){ gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type an epoch or an ISO date to convert.</p>'; return; }
+
+  var epoch = parseEpoch(text);
+  if(epoch!==null){
+    var utc=epochToUTC(epoch);
+    var iso=isoFromUTC(utc);
+    var loc=epochToLocal(epoch);
+    var ms=Math.round(epoch*1000);
+    memoEl.textContent='parsed as epoch seconds';
+    gridEl.innerHTML=
+      card('Unix seconds', String(epoch))+
+      card('Unix milliseconds', String(ms))+
+      card('UTC (ISO-8601)', iso)+
+      card('UTC (human)', humanDate(utc))+
+      card('Local time', loc.iso)+
+      card('Weekday', DOWS[utc.wd])+
+      card('Relative', relTime(epoch, Date.now()/1000))+
+      '';
+    bindCopyButtons();
+    return;
+  }
+
+  var ep = parseISO(text);
+  if(ep!==null){
+    var utc=epochToUTC(ep);
+    memoEl.textContent='parsed as ISO-8601';
+    gridEl.innerHTML=
+      card('Epoch seconds', String(ep))+
+      card('Epoch milliseconds', String(Math.round(ep*1000)))+
+      card('UTC (round-trip)', isoFromUTC(utc))+
+      card('UTC (human)', humanDate(utc))+
+      card('Local time', epochToLocal(ep).iso)+
+      card('Weekday', DOWS[utc.wd])+
+      card('Relative time', relTime(ep, Date.now()/1000))+
+      '';
+    bindCopyButtons();
+    return;
+  }
+
+  gridEl.innerHTML='<div class="out" style="border-color:var(--warn)"><div class="ot" style="color:var(--warn)">not a valid epoch or date</div><div class="ov">Could not parse &quot;'+esc(text)+'&quot;. Try an integer seconds/milliseconds value, or an ISO-8601 date like 2024-11-14T22:13:20Z.</div></div>';
+}
+function bindCopyButtons(){
+  var btns=gridEl.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i];
+    btn.addEventListener('click',function(){
+      var v=btn.getAttribute('data-copy'), lab=btn.getAttribute('data-label');
+      if(!v){ showToast('nothing to copy'); return; }
+      navigator.clipboard.writeText(v).then(function(){ showToast(lab+' copied'); },
+        function(){ try{ prompt('Copy '+lab+':', v); }catch(e){} });
+    });
+  }
+}
+
+/* ---------- share-link wiring (base64url) ---------- */
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+function tryLoad(){
+  var h=window.location.hash;
+  if(h && h.substring(0,3)==='#e=')
+    inEl.value=linkDecode(h.substring(3));
+}
+function updateHash(){
+  var v=inEl.value;
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#e='+linkEncode(v));
+}
+function showToast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+document.getElementById('now').addEventListener('click',function(){
+  inEl.value=String(Math.floor(Date.now()/1000)); render(); updateHash(); showToast('now inserted'); });
+document.getElementById('cl').addEventListener('click', async function(){
+  try{
+    var t=await navigator.clipboard.readText();
+    if(t!==null && t!==undefined){ inEl.value=t; render(); updateHash(); showToast('pasted from clipboard'); }
+  }catch(e){ showToast('clipboard unavailable'); }
+});
+document.getElementById('link').addEventListener('click',function(){
+  var url=window.location.href;
+  navigator.clipboard.writeText(url).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Copy this share link:', url); }catch(e){} });
+});
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>
