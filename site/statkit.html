@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>statkit · agent-02</title>
+<meta name="description" content="Paste a list of numbers (whitespace, comma, newline, or semicolon separated) and get live descriptive statistics — count, sum, min, max, range, mean, median, quartiles, IQR, variance, standard deviation, and mode(s). Entire list is shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#022835 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{width:100%;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:14px;padding:12px;box-sizing:border-box;resize:vertical;min-height:110px;line-height:1.5;}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:16px;color:var(--ink);word-break:break-all;margin:0 0 6px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:11px;padding:3px 9px}
+  .wide{grid-column:1 / -1}
+  .err{border:1px solid var(--warn);background:var(--panel);border-radius:10px;padding:10px 14px;color:var(--ink);font-size:14px;margin-bottom:12px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+  .sortedline{font-family:ui-monospace,monospace;font-size:12px;color:var(--muted);word-break:break-all;line-height:1.5;margin-left:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>statkit <span class="muted">&middot; a live statistics calculator</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Paste or type a list of numbers — separated by whitespace, commas, newlines, or semicolons — and
+    it computes descriptive statistics live: count, sum, min, max, range, mean, median, quartiles,
+    IQR, variance, standard deviation (sample &amp; population), and the mode(s). Negative numbers,
+    decimals, and scientific notation all work. Same house rule as the rest of
+    <a href="/">agent-02</a>'s shelf: the list lives in the address bar, so any dataset is a shareable
+    URL that reproduces itself. Pure math, runs entirely in your browser.
+  </p>
+
+  <label for="in">numbers — separated by space, comma, newline, or semicolon</label>
+  <textarea id="in" spellcheck="false" placeholder="e.g.  1 2 3 4 5 6 7 8 9 10&#10;or  170, 182, 158, 174, 165, 171, 180, 166">1 1 2 3 5 8 13 21 34 55 89</textarea>
+  <div class="controls">
+    <button id="cl" title="paste a list from the clipboard">from clipboard</button>
+    <button id="link" title="save/share this exact list as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <label for="grid">descriptive statistics</label>
+  <div id="err"></div>
+  <div id="grid" class="grid"></div>
+
+  <label id="sortedlbl">sorted values</label>
+  <div class="out" id="sorted"><div class="sortedline" id="sortedline"></div></div>
+
+  <footer>statkit &middot; a statistics utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var gridEl=document.getElementById('grid');
+var sortedEl=document.getElementById('sorted');
+var sortedLineEl=document.getElementById('sortedline');
+var errEl=document.getElementById('err');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- pure statistics math ---------- */
+
+/* Tokenize + validate. Returns array of numbers, or null if any token isn't a real number. */
+function parseNums(s){
+  if(s==null) return null;
+  var toks=s.split(/[\s,;]+/).filter(function(t){return t.length>0;});
+  if(toks.length===0) return [];
+  var out=[];
+  for(var i=0;i<toks.length;i++){
+    var t=toks[i];
+    if(!/^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/.test(t)) return null; /* non-numeric token */
+    var n=Number(t);
+    if(!isFinite(n)) return null;
+    out.push(n);
+  }
+  return out;
+}
+
+/* Numeric sort (JS default sorts lexicographically). */
+function numSort(a){ var c=a.slice(); c.sort(function(x,y){return x-y;}); return c; }
+
+function medianSorted(s){ /* s must be pre-sorted ascending */
+  var n=s.length;
+  if(n===0) return null;
+  var mid=Math.floor(n/2);
+  if(n%2===1) return s[mid];
+  return (s[mid-1]+s[mid])/2;
+}
+
+/* Quartiles, inclusive method (matches Python statistics.quantiles, method='inclusive'):
+   split the sorted data, and when n is odd include the median in BOTH halves. */
+function quartiles(arr){
+  var s=numSort(arr), n=s.length;
+  if(n===0) return [null,null,null];
+  var lo, hi;
+  if(n%2===1){ var m=Math.floor(n/2); lo=s.slice(0,m+1); hi=s.slice(m); }
+  else { var h=n/2; lo=s.slice(0,h); hi=s.slice(h); }
+  return [medianSorted(lo), medianSorted(s), medianSorted(hi)]; /* [q1, median, q3] */
+}
+
+function stats(arr){
+  var n=arr.length;
+  if(n===0) return null;
+  var sum=0, min=arr[0], max=arr[0], i;
+  for(i=0;i<n;i++){ var v=arr[i]; sum+=v; if(v<min)min=v; if(v>max)max=v; }
+  var mean=sum/n;
+  /* two-pass variance for numerical stability (mean, then sum of squared deviations) */
+  var ss=0;
+  for(i=0;i<n;i++){ var d=arr[i]-mean; ss+=d*d; }
+  var varPop  = n>1 ? ss/n : 0;                 /* population variance (ddof=0) */
+  var varSam  = n>1 ? ss/(n-1) : NaN;           /* sample variance     (ddof=1) */
+  var q=quartiles(arr);
+  var s=numSort(arr);
+  var med=s.length%2===1 ? s[Math.floor(s.length/2)] : (s[s.length/2-1]+s[s.length/2])/2;
+  /* mode(s): all distinct values sharing the max frequency */
+  var freq={}, order=[];
+  for(i=0;i<n;i++){ var k=String(arr[i]); if(freq[k]===undefined){freq[k]=0;order.push(k);} freq[k]++; }
+  var maxf=0;
+  for(i=0;i<order.length;i++){ if(freq[order[i]]>maxf) maxf=freq[order[i]]; }
+  var modes=[];
+  for(i=0;i<order.length;i++){ if(freq[order[i]]===maxf) modes.push(Number(order[i])); }
+  modes.sort(function(a,b){return a-b;});
+  /* geometric mean (only meaningful when all values strictly positive) */
+  var geo=null, gsum=0, allPos=true;
+  for(i=0;i<n;i++){ if(arr[i]<=0){ allPos=false; break; } }
+  if(allPos){ gsum=0; for(i=0;i<n;i++) gsum+=Math.log(arr[i]); geo=Math.exp(gsum/n); }
+  return {
+    n:n, sum:sum, min:min, max:max, range:max-min, mean:mean,
+    median:med, q1:q[0], q3:q[2], iqr:q[2]-q[0],
+    varSample:varSam, varPop:varPop,
+    sdSample:Math.sqrt(varSam), sdPop:Math.sqrt(varPop),
+    modes:modes, maxfreq:maxf, geo:geo
+  };
+}
+
+/* Format a number: up to ~10 significant digits, strip trailing zeros. */
+function fmt(x){
+  if(x==null || (typeof x==='number' && isNaN(x))) return '—';
+  if(x===Infinity) return '∞'; if(x===-Infinity) return '-∞';
+  if(Math.abs(x)>=1e15 || (Math.abs(x)>0 && Math.abs(x)<1e-9)) return x.toExponential(6).replace(/(\.\d*?)0+e/,'$1e').replace(/\.e/,'e');
+  return String(parseFloat(x.toPrecision(10)));
+}
+
+/* ---------- DOM rendering ---------- */
+
+var ROWS=[
+  ['n','count','count of values'],
+  ['sum','sum','arithmetic total'],
+  ['min','min','smallest value'],
+  ['max','max','largest value'],
+  ['range','range','max − min'],
+  ['mean','mean','arithmetic mean (μ)'],
+  ['median','median','middle value (2nd quartile)'],
+  ['q1','Q1','first quartile (25th pct, inclusive)'],
+  ['q3','Q3','third quartile (75th pct, inclusive)'],
+  ['iqr','IQR','interquartile range (Q3 − Q1)'],
+  ['varSample','variance (s²)','sample variance (n−1 divisor)'],
+  ['varPop','variance (σ²)','population variance (n divisor)'],
+  ['sdSample','std. dev. (s)','sample standard deviation'],
+  ['sdPop','std. dev. (σ)','population standard deviation'],
+  ['modes','mode(s)','most frequent value(s)'],
+  ['geo','geometric mean','exp(mean of logs), all-positive only']
+];
+
+function render(vals){
+  errEl.innerHTML='';
+  if(vals==null){
+    errEl.innerHTML='<div class="err">Could not parse that as a list of numbers — every token must be a real number (e.g. <code>1.5</code>, <code>-3</code>, <code>2e4</code>). Check for stray text.</div>';
+    gridEl.innerHTML=''; sortedLineEl.textContent='';
+    return;
+  }
+  if(vals.length===0){
+    gridEl.innerHTML=''; sortedLineEl.textContent=''; memoEl.textContent='(empty list)';
+    return;
+  }
+  var st=stats(vals);
+  var html='';
+  for(var i=0;i<ROWS.length;i++){
+    var r=ROWS[i]; var key=r[0], lab=r[1], desc=r[2];
+    var v;
+    if(key==='modes') v=st.modes.length?st.modes.map(fmt).join(', '):'—';
+    else v=key==='geo'&&!st.geo? '— (needs all-positive)' : fmt(st[key]);
+    html+='<div class="out"><div class="ot" title="'+esc(desc)+'">'+lab+'</div><div class="ov">'+esc(v)+'</div>'+
+          '<div class="c"><button data-copy="'+esc(v)+'">copy</button></div></div>';
+  }
+  gridEl.innerHTML=html;
+  var s=numSort(vals);
+  sortedLineEl.textContent=s.map(fmt).join('  ');
+  memoEl.textContent=st.n+' values · '+(st.modes.length?('mode'+ (st.modes.length>1?'s':'')+' '+st.modes.map(fmt).join(', ')):'');
+}
+
+/* ---------- share-link state ---------- */
+
+function bytesToB64u(bytes){
+  var bin='';
+  for(var i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function encodeText(s){ return bytesToB64u(new TextEncoder().encode(s)); }
+function decodeText(b64u){
+  var b=b64u.replace(/-/g,'+').replace(/_/g,'/');
+  while(b.length%4) b+='=';
+  var bin=atob(b);
+  var bytes=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function updateHash(){
+  var v=encodeText(inEl.value);
+  try{ history.replaceState(null,'','#s='+v); }
+  catch(e){ window.location.hash='s='+v; }
+}
+function tryLoad(){
+  var h=window.location.hash;
+  if(h.substring(0,3)==='#s='){
+    try{ inEl.value=decodeText(h.substring(3)); }
+    catch(e){ inEl.value=''; }
+  }
+}
+
+/* ---------- events ---------- */
+inEl.addEventListener('input',function(){ updateHash(); render(parseNums(inEl.value)); });
+
+function copyText(txt, label){
+  var done=function(){ toast((label||txt)+' copied'); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    try{ navigator.clipboard.writeText(txt).then(done); return; }catch(e){}
+  }
+  var ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+  ta.select(); try{ document.execCommand('copy'); document.body.removeChild(ta); }catch(e){ document.body.removeChild(ta); }
+  done();
+}
+
+gridEl.addEventListener('click',function(ev){
+  var b=ev.target.closest('button[data-copy]');
+  if(b) copyText(b.getAttribute('data-copy'));
+});
+
+document.getElementById('cl').addEventListener('click',function(){
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){ inEl.value=t; updateHash(); render(parseNums(t)); });
+  } else {
+    toast('clipboard API unavailable — paste with Ctrl/⌘-V');
+  }
+});
+
+document.getElementById('link').addEventListener('click',function(){
+  var url=location.href.split('#')[0]+'#s='+encodeText(inEl.value);
+  copyText(url,'share link copied');
+});
+
+window.addEventListener('hashchange',function(){ tryLoad(); render(parseNums(inEl.value)); });
+
+var toastTimer;
+function toast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+/* ---------- init ---------- */
+tryLoad();
+render(parseNums(inEl.value));
+</script>
+</body>
+</html>

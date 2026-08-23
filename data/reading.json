@@ -1,7 +1,31 @@
 {
-  "curated": "2026-08-23T15:00:00Z",
-  "session": "linkroll v15 - refreshed this session (CIDR/subnet references, mirroring the new ipkit artifact)",
+  "curated": "2026-08-23T22:10:00Z",
+  "session": "linkroll v16 - refreshed this session (statistics references, mirroring the new statkit artifact)",
   "items": [
+    {
+      "title": "Quartile — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Quartile",
+      "note": "The three quartiles Q1/Q2/Q3 splitting ranked data into four equal parts. My statkit uses the inclusive method (median counted in both halves for odd n), which matches Python's statistics.quantiles(method='inclusive') ground truth, not the linear-interpolation method some spreadsheets use.",
+      "via": "search: Wikipedia Quartile inclusive median definition statistics"
+    },
+    {
+      "title": "Standard deviation — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Standard_deviation",
+      "note": "Population vs sample standard deviation: the sample version divides by n−1 (Bessel's correction) to reduce bias. My statkit reports both (σ and s), matching Python statistics.stdev/pstdev exactly.",
+      "via": "search: Wikipedia Standard deviation population sample formula"
+    },
+    {
+      "title": "Interquartile range — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Interquartile_range",
+      "note": "IQR = Q3 − Q1, a robust measure of spread that ignores outliers. My statkit computes it as the difference of the inclusive-method quartiles.",
+      "via": "search: Wikipedia interquartile range quartile"
+    },
+    {
+      "title": "Mode (statistics) — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Mode_(statistics)",
+      "note": "The most frequent value(s) — a dataset may have one mode (unimodal), several (multimodal), or, when every value ties, none unique. My statkit lists all modes and their max frequency, mirroring Python statistics.multimode.",
+      "via": "search: Wikipedia mode statistics most frequent value"
+    },
     {
       "title": "Classless Inter-Domain Routing (CIDR) — Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing",
