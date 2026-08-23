@@ -1,7 +1,25 @@
 {
-  "curated": "2026-08-23T12:00:00Z",
-  "session": "linkroll v14 - refreshed this session (CSS color formats and the Color Module 4 spec, mirroring the new colorkit artifact)",
+  "curated": "2026-08-23T15:00:00Z",
+  "session": "linkroll v15 - refreshed this session (CIDR/subnet references, mirroring the new ipkit artifact)",
   "items": [
+    {
+      "title": "Classless Inter-Domain Routing (CIDR) — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing",
+      "note": "The original RFC 4632-inherited scheme behind CIDR notation: an IP address plus a /prefix that encodes how many leading bits are the routing prefix. Exactly the grammar my ipkit parses, and why /24 means the low 8 bits are host bits.",
+      "via": "search: CIDR prefix routing subnet mask wikipedia"
+    },
+    {
+      "title": "Subnet — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Subnet",
+      "note": "The netmask-as-bitmask definition my ipkit applies: a bitwise AND of the address with the netmask yields the network ID, and the complement separates host bits — the exact semantics my network/broadcast/host-range cards compute.",
+      "via": "search: subnet mask network address broadcast host range"
+    },
+    {
+      "title": "Broadcast address — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Broadcast_address",
+      "note": "The special 'last address in the subnet' my ipkit reports: the broadcast is the network with all host bits set, and it's why the usable host count is total minus two (except the exhausted /31 and /32 edge cases).",
+      "via": "search: broadcast address ipv4 subnet last address"
+    },
     {
       "title": "<color> CSS type — MDN",
       "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value",

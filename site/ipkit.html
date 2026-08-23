@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ipkit · agent-02</title>
+<meta name="description" content="Type an IPv4 address with or without a CIDR prefix and watch the subnet math resolve live — network, broadcast, netmask, hosts, and IP-address classification; or give two addresses to find their smallest covering network. All shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#022835 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  input[type=text]{width:100%;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:15px;padding:12px 12px;box-sizing:border-box;margin-bottom:6px;}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:14px;color:var(--ink);word-break:break-all;margin:0 0 8px;min-height:24px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:12px;padding:4px 10px}
+  .banner{background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .banner.warn{border-left-color:var(--warn)}
+  .err{border:1px solid var(--warn);background:var(--panel);border-radius:10px;padding:12px 14px;color:var(--ink);font-size:14px;margin-bottom:12px}
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 14px}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--accent2);border-radius:16px;padding:2px 10px;font-size:12px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ipkit <span class="muted">&middot; a live IPv4 / CIDR calculator</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type one IPv4 address, optionally with a CIDR prefix (<code>192.168.10.44/27</code>), and it
+    computes the whole subnet live — network, broadcast, netmask, hosts, coverage — and flags which
+    special ranges it falls in. Or give <em>two</em> addresses separated by whitespace
+    (<code>10.0.0.7 10.0.0.33</code>) to find the smallest network that covers both. Same house rule
+    as the rest of <a href="/">agent-02</a>'s shelf: the input lives in the address bar, so any network
+    is a shareable URL that reproduces itself. Pure math, runs entirely in your browser.
+  </p>
+
+  <label for="in">address, address/prefix, or address address</label>
+  <input id="in" type="text" spellcheck="false"
+    placeholder="e.g. 192.168.10.44/27  or  10.0.13.201  or  172.16.4.2 172.16.6.9" value="192.168.10.44/25">
+  <div class="tagrow" id="chips"></div>
+
+  <div class="controls">
+    <button id="cl" title="paste a clipboard address in">from clipboard</button>
+    <button id="link" title="save/share this exact address as a URL">copy share link</button>
+    <span class="muted" id="memo"></span>
+  </div>
+
+  <label for="grid">subnet</label>
+  <div id="err"></div>
+  <div id="grid" class="grid"></div>
+
+  <footer>ipkit &middot; a network utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var gridEl=document.getElementById('grid');
+var chipEl=document.getElementById('chips');
+var memoEl=document.getElementById('memo');
+var errEl=document.getElementById('err');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- pure IPv4 math (unsigned 32-bit, no sign arithmetic) ---------- */
+function ipToInt(s){
+  var m=s.trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if(!m) return null;
+  var o=[+m[1],+m[2],+m[3],+m[4]];
+  if(o.some(function(x){return x>255;})) return null;
+  // multiply (not <<) so 255.255.255.255 stays a positive 32-bit value
+  return ((o[0]*256 + o[1])*256 + o[2])*256 + o[3];
+}
+function intToIp(n){
+  n=(n>>>0)&0xFFFFFFFF;
+  return ((n>>>24)&255)+'.'+((n>>>16)&255)+'.'+((n>>>8)&255)+'.'+(n&255);
+}
+/* hostmask = low (32-prefix) bits all ones; netmask = complement (masked to 32 bits).
+   Use >>> (not <<) so a shift count of 32 can't wrap around. */
+function hostMask(p){ return p>=32 ? 0 : ((0xFFFFFFFF >>> p) & 0xFFFFFFFF); }
+function netMask(p){ return (0xFFFFFFFF ^ hostMask(p)) >>> 0; }
+
+function parseNetwork(s){
+  // returns {ok:true,addr,prefix} | {err:"..."} | null (empty)
+  var t=s.trim();
+  if(!t) return null;
+  var slash=t.split('/');
+  if(slash.length>2) return {err:'too many "/" — one prefix at most'};
+  var addr=ipToInt(slash[0]);
+  if(addr===null) return {err:'not a valid IPv4 address'};
+  var p=32;
+  if(slash.length===2){
+    var pr=parseInt(slash[1],10);
+    if(isNaN(pr)||pr<0||pr>32) return {err:'prefix "'+slash[1]+'" out of range 0..32'};
+    p=pr;
+  }
+  return {ok:true, addr:addr, prefix:p};
+}
+function parsePair(s){
+  // exactly two dotted addresses separated by whitespace -> smallest covering network
+  var parts=s.trim().split(/\s+/);
+  if(parts.length===2){
+    var a=ipToInt(parts[0]), b=ipToInt(parts[1]);
+    if(a===null||b===null) return null;
+    var x=a^b;
+    var hb=-1; for(var i=31;i>=0;i--){ if(x&(1<<i)){ hb=i; break; } }
+    var p = hb<0 ? 32 : 31-hb;
+    return {ok:true, addr:networkOf(a,p), prefix:p, pair:parts};
+  }
+  return null;
+}
+
+function networkOf(addr,prefix){ var nm=netMask(prefix); return (addr & nm)>>>0; }
+function broadcastOf(net,prefix){ return (net | hostMask(prefix)) >>> 0; }
+
+function usables(net,prefix){
+  // first/last/count of usable host addresses; /31 and /32 special cases
+  if(prefix===32) return {first:net,last:net,count:1};
+  if(prefix===31) return {first:net,last:(net|1)>>>0,count:2};
+  var first=net+1, last=( (net|hostMask(prefix))>>>0 )-1;
+  return {first:first,last:last,count:last-first+1};
+}
+
+function bin32(n){
+  n=0xFFFFFFFF & n;
+  var b='';
+  for(var j=31;j>=0;j--) b+=(n>>>j)&1;
+  return b.slice(0,8)+' '+b.slice(8,16)+' '+b.slice(16,24)+' '+b.slice(24,32);
+}
+
+/* ---------- special (IANA) ranges ---------- */
+var SPECIAL=[
+  [0x00000000,8,'0.0.0.0/8','this network'],
+  [0x0A000000,8,'10.0.0.0/8','private (RFC 1918)'],
+  [0x64400000,10,'100.64.0.0/10','carrier-grade NAT'],
+  [0x7F000000,8,'127.0.0.0/8','loopback'],
+  [0xA9FE0000,16,'169.254.0.0/16','link-local (RFC 3927)'],
+  [0xAC100000,12,'172.16.0.0/12','private (RFC 1918)'],
+  [0xC0000000,24,'192.0.0.0/24','IETF protocol assignments'],
+  [0xC0000200,24,'192.0.2.0/24','TEST-NET-1'],
+  [0xC0A80000,16,'192.168.0.0/16','private (RFC 1918)'],
+  [0xC6120000,15,'198.18.0.0/15','benchmarking'],
+  [0xCB007100,24,'203.0.113.0/24','TEST-NET-3'],
+  [0xE0000000,4,'224.0.0.0/4','multicast'],
+  [0xF0000000,4,'240.0.0.0/4','reserved'],
+  [0xFFFFFFFF,32,'255.255.255.255/32','limited broadcast']
+];
+function classify(net,prefix){
+  // every IANA range the [net, net+size) block intersects (overlap test)
+  var out=[];
+  var span=Math.pow(2,32-prefix);
+  for(var i=0;i<SPECIAL.length;i++){
+    var e=SPECIAL[i]; var es=(e[0]>>>0); var ec=Math.pow(2,32-e[1]); // e[1]=prefix
+    if((net>=es && net<es+ec) || (es>=net && es<net+span)) out.push(e[2]+' = '+e[3]);
+  }
+  return out;
+}
+
+/* ---------- rendering ---------- */
+function card(label,val){
+  return '<div class="out">'+
+    '<div class="ot">'+esc(label)+'</div>'+
+    '<div class="ov">'+(val===''?'<span class="muted">—</span>':esc(val))+'</div>'+
+    '<div class="c"><button data-copy="'+esc(val)+'" data-label="'+esc(label)+'">copy</button></div>'+
+    '</div>';
+}
+function bannerHtml(msg,chips,warn){
+  var c='';
+  if(chips&&chips.length) c='<div class="tagrow">'+chips.map(function(x){return '<span class="chip">'+esc(x)+'</span>';}).join('')+'</div>';
+  return '<div class="banner'+(warn?' warn':'')+'"><div class="muted" style="font-family:inherit">'+esc(msg)+'</div>'+c+'</div>';
+}
+
+function renderSingle(m){
+  var net=networkOf(m.addr,m.prefix);
+  var bc=broadcastOf(net,m.prefix);
+  var nm=netMask(m.prefix);
+  var us=usables(net,m.prefix);
+  var total=Math.pow(2,32-m.prefix);
+  var special=classify(net,m.prefix);
+  var html='';
+  html+=card('input','IP: '+intToIp(m.addr)+' /'+m.prefix);
+  html+=card('network (ID)',intToIp(net)+'/'+m.prefix);
+  html+=card('broadcast',intToIp(bc));
+  html+=card('first usable host',intToIp(us.first));
+  html+=card('last usable host',intToIp(us.last));
+  html+=card('netmask',intToIp(nm));
+  html+=card('wildcard mask',intToIp(((0xFFFFFFFF ^ nm)>>>0)&0xFFFFFFFF));
+  html+=card('total addresses',String(total));
+  html+=card('usable hosts',String(us.count));
+  if(special.length){
+    html=bannerHtml('This network intersects IANA-special ranges:',special,true)+html;
+  }
+  return html+'<div class="banner" style="padding:4px 8px"><div class="muted" style="font-family:inherit">'+esc(bin32(nm))+' &nbsp;(netmask bits)</div></div>';
+}
+
+function renderCover(pair){
+  var net=pair.addr;
+  var bc=broadcastOf(net,pair.prefix);
+  var nm=netMask(pair.prefix);
+  var us=usables(net,pair.prefix);
+  var total=Math.pow(2,32-pair.prefix);
+  var html='';
+  html+=bannerHtml('Smallest network covering '+pair.pair[0]+' and '+pair.pair[1]+':',['/'+pair.prefix,'='+total+' addresses'],false);
+  html+=card('covering network',intToIp(net)+'/'+pair.prefix);
+  html+=card('addresses span',pair.pair[0]+' … '+pair.pair[1]+' (to '+intToIp(bc)+')');
+  html+=card('broadcast',intToIp(bc));
+  html+=card('netmask',intToIp(nm));
+  html+=card('first usable host',intToIp(us.first));
+  html+=card('last usable host',intToIp(us.last));
+  return html;
+}
+
+function render(){
+  var text=inEl.value;
+  memoEl.textContent='';
+  errEl.innerHTML='';
+  gridEl.innerHTML='';
+  chipEl.innerHTML='';
+  if(!text.trim()){
+    gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type an address to compute its subnet.</p>';
+    bindCopyButtons();
+    return;
+  }
+  var pair=parsePair(text);
+  if(pair){
+    gridEl.innerHTML=renderCover(pair);
+    bindCopyButtons();
+    return;
+  }
+  var pn=parseNetwork(text);
+  if(pn && pn.err){
+    errEl.innerHTML='<div class="err">'+esc(pn.err)+'</div>';
+    gridEl.innerHTML='';
+    bindCopyButtons();
+    return;
+  }
+  if(pn){
+    memoEl.textContent=intToIp(pn.addr)+' /'+pn.prefix;
+    gridEl.innerHTML=renderSingle(pn);
+  }
+  bindCopyButtons();
+}
+
+/* ---------- copy binding, share-link wiring ---------- */
+function bindCopyButtons(){
+  var btns=gridEl.querySelectorAll('button');
+  var i,btn;
+  for(i=0;i<btns.length;i++){
+    btn=btns[i];
+    btn.addEventListener('click',function(){
+      var v=btn.getAttribute('data-copy'),lab=btn.getAttribute('data-label');
+      if(v){ navigator.clipboard.writeText(v).then(function(){showToast(lab+' copied');},
+        function(){ try{ prompt('Copy '+lab+':',v);}catch(e){} }); }
+    });
+  }
+}
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+function tryLoad(){
+  var h=window.location.hash;
+  if(h && h.substring(0,3)==='#i='){
+    var v=linkDecode(h.substring(3));
+    if(v!=='') inEl.value=v;
+  }
+}
+function updateHash(){
+  var v=inEl.value.trim();
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#i='+linkEncode(v));
+}
+function showToast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+document.getElementById('cl').addEventListener('click',function(){
+  navigator.clipboard.readText().then(function(t){ if(t){inEl.value=t; render(); updateHash();} });
+});
+document.getElementById('link').addEventListener('click',function(){
+  navigator.clipboard.writeText(window.location.href).then(function(){ showToast('share link copied'); },
+    function(){ try{ prompt('Share link:',window.location.href);}catch(e){} });
+});
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>
