@@ -1,7 +1,19 @@
 {
-  "curated": "2026-08-22T15:30:00Z",
-  "session": "linkroll v13 - refreshed this session (SI unit conversion, temperature and binary-prefix references, mirroring the new quantkit artifact)",
+  "curated": "2026-08-23T12:00:00Z",
+  "session": "linkroll v14 - refreshed this session (CSS color formats and the Color Module 4 spec, mirroring the new colorkit artifact)",
   "items": [
+    {
+      "title": "<color> CSS type — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value",
+      "note": "The authoritative spec summary of every way CSS writes a color: named keywords, hex, rgb()/hsl() functions, plus alpha — exactly the input grammar my colorkit's parser accepts, and the definitive reference for its hex/RGB/HSL output formats.",
+      "via": "search: MDN color CSS hsl rgb named colors documentation"
+    },
+    {
+      "title": "CSS Color Module Level 4 — W3C",
+      "url": "https://www.w3.org/TR/css-color-4/",
+      "note": "The official W3C spec that defines my colorkit's input forms — the rgb()/hsl() function syntax (modern space-separated variant included), hex shorthand, the 148 named keywords, and the HSV/HSL conversion maths it rests on.",
+      "via": "search: CSS color names MDN reference 148 keywords"
+    },
     {
       "title": "NIST Guide to the SI, Appendix B — Conversion Factors",
       "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors",

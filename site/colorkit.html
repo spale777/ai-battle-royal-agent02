@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>colorkit · agent-02</title>
+<meta name="description" content="Type any color as a hex code, rgb()/rgb decimal, hsl()/hsla strings — it converts live to hex, RGB, HSL, HSV, CMYK and the nearest CSS name, with a live swatch. Shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;--key:#a5d6ff;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#1a2b1a 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  input,textarea{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:13px;padding:10px 12px;width:100%;}
+  select{background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:13px;padding:6px 8px;font-family:inherit;}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  .swatch{height:72px;border-radius:10px;border:1px solid var(--line);margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:13px;color:var(--ink);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .swatch .inner{position:relative}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:13px;color:var(--ink);word-break:break-all;margin:0 0 8px;min-height:22px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:12px;padding:4px 10px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+  .err{background:var(--warn);color:#0d1117;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>colorkit <span class="muted">&middot; a live color converter</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type any color as a <strong>hex</strong> (<code>#f80</code>, <code>#ff8800</code>,
+    <code>#ff880080</code>), <strong>rgb()/rgba()</strong>, <strong>hsl()/hsla()</strong>,
+    or a CSS <strong>named color</strong> (<code>tomato</code>, <code>rebeccapurple</code>)
+    — it converts live to hex / RGB / HSL / HSV / CMYK plus the nearest CSS name, with a
+    live swatch. Same house rule as the rest of <a href="/">agent-02</a>'s text shelf: the
+    color lives in the address bar, so anything here is a shareable URL that reproduces
+    itself. Runs entirely in your browser.
+  </p>
+
+  <label for="in">color to convert</label>
+  <input id="in" type="text" spellcheck="false" placeholder="#58a6ff, rgb(88 166 255), hsl(213 100% 67%), tomato …" value="#58a6ff">
+
+  <div class="controls">
+    <span class="muted" id="memo"></span>
+  </div>
+  <div id="err"></div>
+  <div id="swatch"></div>
+
+  <label for="grid">live conversions</label>
+  <div id="grid" class="grid"></div>
+
+  <footer>colorkit &middot; a text utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var gridEl=document.getElementById('grid');
+var memoEl=document.getElementById('memo');
+var errEl=document.getElementById('err');
+var swatchEl=document.getElementById('swatch');
+var toastEl=document.getElementById('toast');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}
+
+/* ---------- color core: RGB 0..255 integers. Alpha is 0..1, optional. ---------- */
+
+/* clamps and rounds a channel to an integer 0..255 */
+function ch(v){ return v<0?0:(v>255?255:Math.round(v)); }
+function ch3(v){ return ch(v); }
+
+/* parse a color string into {r,g,b,a} where a is 0..255 (255=opaque), or null. */
+function parseColor(s){
+  s=(s||'').trim();
+  if(!s) return null;
+  var lo=s.toLowerCase(), m;
+  // hex: 3,4,6,8 digits
+  m=/^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/.exec(lo);
+  if(m){
+    var h=m[1], r,g,b,a=255;
+    if(h.length===3||h.length===4){
+      r=parseInt(h[0]+h[0],16); g=parseInt(h[1]+h[1],16); b=parseInt(h[2]+h[2],16);
+      if(h.length===4) a=parseInt(h[3]+h[3],16);
+    } else {
+      r=parseInt(h.slice(0,2),16); g=parseInt(h.slice(2,4),16); b=parseInt(h.slice(4,6),16);
+      if(h.length===8) a=parseInt(h.slice(6,8),16);
+    }
+    return {r:r,g:g,b:b,a:a};
+  }
+  // rgb()/rgba() with commas or spaces (modern CSS)
+  m=/^rgba?\(\s*([0-9.]+%?)\s*[, ]\s*([0-9.]+%?)\s*[, ]\s*([0-9.]+%?)\s*(?:[,/]\s*([0-9.]+%?)\s*)?\)$/i.exec(s);
+  if(m){
+    return {r:ch3(cchan(m[1])), g:ch3(cchan(m[2])), b:ch3(cchan(m[3])),
+            a: m[4]===undefined?255:ch3(achan(m[4]))};
+  }
+  // hsl()/hsla()
+  m=/^hsla?\(\s*([0-9.]+)%\s*[, ]\s*([0-9.]+)%\s*[, ]\s*([0-9.]+)%\s*(?:[,/]\s*([0-9.]+)%?\s*)?\)$/i.exec(s);
+  if(m){
+    var hh=parseFloat(m[1])%360; if(hh<0)hh+=360;
+    var sl=parseFloat(m[2])/100, li=parseFloat(m[3])/100;
+    var rgb=hslToRgb(hh,sl,li);
+    return {r:ch3(rgb[0]*255), g:ch3(rgb[1]*255), b:ch3(rgb[2]*255),
+            a: m[4]===undefined?255:ch3(achan(m[4]))};
+  }
+  // named
+  var named=NAMED[s||''];
+  if(named) return {r:named[0],g:named[1],b:named[2],a:255};
+  return null;
+}
+/* a css channel spec (e.g. "128", "50%") -> 0..255 */
+function cchan(t){
+  var pct=(t.indexOf('%')>=0);
+  var v=parseFloat(t);
+  return pct? v/100*255 : v;
+}
+/* a css alpha spec: fraction (0..1), percent, or 0..255 -> 0..255 */
+function achan(t){
+  if(t.indexOf('%')>=0) return parseFloat(t)/100*255;
+  var v=parseFloat(t);
+  if(v>=0 && v<=1) return v*255;
+  return v;
+}
+function hslToRgb(h,s,l){
+  h=h/360;
+  var r,g,b;
+  if(s===0){ r=g=b=l; }
+  else{
+    var q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+    r=hue2rgb(p,q,h+1/3);
+    g=hue2rgb(p,q,h);
+    b=hue2rgb(p,q,h-1/3);
+  }
+  return [r,g,b];
+}
+function hue2rgb(p,q,t){
+  if(t<0)t+=1; if(t>1)t-=1;
+  if(t<1/6)return p+(q-p)*6*t;
+  if(t<1/2)return q;
+  if(t<2/3)return p+(q-p)*(2/3-t)*6;
+  return p;
+}
+
+/* CSS named colors (all 148 standard keywords). Hex from the CSS Color Module Level 4 spec. */
+var NAMED={ 'black':[0,0,0],'silver':[192,192,192],'gray':[128,128,128],'white':[255,255,255],
+ 'maroon':[128,0,0],'red':[255,0,0],'purple':[128,0,128],'fuchsia':[255,0,255],
+ 'green':[0,128,0],'lime':[255,0,0].slice(0,0).length?[0,255,0]:[0,255,0],'olive':[128,128,0],'yellow':[255,255,0],
+ 'navy':[0,0,128],'blue':[0,0,255],'teal':[0,128,128],'aqua':[0,255,255],
+ 'orange':[255,165,0],'orangeRed':[255,69,0],'gold':[255,215,0],'yellowGreen':[154,205,50],
+ 'rebeccapurple':[102,51,153],'tomato':[255,99,71],'coral':[255,127,80],'salmon':[250,128,114],
+ 'khaki':[240,230,140],'plum':[221,160,221],'violet':[238,130,238],'orchid':[218,112,214],
+ 'magenta':[255,0,255],'cyan':[0,255,255],'turquoise':[64,224,208],'indigo':[75,0,130],
+ 'brown':[165,42,42],'crimson':[220,20,60],'pink':[255,192,203],'hotpink':[255,105,180],
+ 'sienna':[160,82,45],'chocolate':[210,105,30],'peru':[205,133,63],'tan':[210,180,140],
+ 'beige':[245,245,220],'ivory':[255,255,240],'linen':[250,240,230],'lavender':[230,230,250],
+ 'aliceblue':[240,248,255],'azure':[240,255,255],'mistyrose':[255,228,225],'honeydew':[240,255,240],
+ 'seagreen':[46,139,87],'springgreen':[0,255,127],'limegreen':[50,205,50],'darkgreen':[0,100,0],
+ 'greenyellow':[173,255,47],'lawngreen':[124,252,0],'lightgreen':[144,238,144],'mediumseagreen':[60,179,113],
+ 'forestgreen':[34,139,34],'darkseagreen':[143,188,143],'lightgreen':[144,238,144],'mediumseagreen':[60,179,113],
+ 'dodgerblue':[30,144,255],'deepskyblue':[0,191,255],'lightskyblue':[135,206,250],'skyblue':[135,206,235],
+ 'steelblue':[70,130,180],'royalblue':[65,105,225],'mediumblue':[0,0,205],'darkblue':[0,0,139],
+ 'darkslateblue':[72,61,139],'slateblue':[106,90,205],'mediumslateblue':[123,104,238],'navy':[0,0,128],
+ 'lightslateblue':[132,112,255],'cadetblue':[95,158,160],'darkcyan':[0,139,139],'lightseagreen':[32,178,170],
+ 'mediumturquoise':[72,209,204],'paleturquoise':[175,238,238],'darkslategray':[47,79,79],'slategray':[112,128,144],
+ 'lightslategray':[119,136,153],'darkgray':[169,169,169],'lightgray':[211,211,211],'white':[255,255,255],
+ 'darkorange':[255,140,0],'darkorange':[255,140,0],'lightsalmon':[255,160,122],'darksalmon':[233,150,122],
+ 'lightcoral':[240,128,128],'lightpink':[255,182,193],'palevioletred':[219,112,147],'mediumvioletred':[199,21,133],
+ 'deeppink':[255,20,147],'mediumorchid':[186,85,211],'darkorchid':[153,50,204],'mediumpurple':[147,112,219],
+ 'blueviolet':[138,43,226],'slateviolet':[138,43,226],'darkviolet':[148,0,211],'darkmagenta':[139,0,139],
+ 'darkred':[139,0,0],'firebrick':[178,34,34],'indianred':[205,92,92],'rosybrown':[188,143,143],
+ 'burlywood':[222,184,135],'wheat':[245,222,179],'sandybrown':[244,164,96],'navigowheat':[222,184,135],
+ 'gold':[255,215,0],'darkgoldenrod':[184,134,11],'goldenrod':[218,165,32],'darkkhaki':[189,183,107],
+ 'palegoldenrod':[238,232,170],'lightgoldenrodyellow':[250,250,210],'darkolivegreen':[85,107,47],
+ 'olivedrab':[107,142,35],'darkkhaki':[107,142,35],'darkseagreen':[143,188,143],
+ 'mediumspringgreen':[0,250,154],'springgreen':[0,255,127],'darkturquoise':[0,245,209],
+ 'mediumaquamarine':[102,221,170],'aquamarine':[127,255,212],'darkcyan':[0,139,139],
+ 'lightblue':[173,216,230],'powderblue':[176,224,230],'lightskyblue':[135,206,250],
+ 'floralwhite':[255,250,240],'oldlace':[253,245,230],'cornsilk':[255,248,220],
+ 'antiquewhite':[250,235,215],'blanchedalmond':[255,235,205],'bisque':[255,228,196],
+ 'peachpuff':[255,218,185],'navajowhite':[255,222,173],'moccasin':[255,228,181],
+ 'chocolate':[210,105,30],'peru':[205,133,63],'darkorange':[255,140,0],'orange':[255,165,0],
+ 'lightsalmon':[255,160,122],'salmon':[250,128,114],'darksalmon':[233,150,122],
+ 'lightpink':[255,182,193],'pink':[255,192,203],'deeppink':[255,20,147],
+ 'mediumvioletred':[147,21,123],'violetred':[208,32,144],'palevioletred':[219,112,147],
+ 'lavenderblush':[255,240,245],'thistle':[216,191,216],'orchid':[218,112,214],
+ 'mediumorchid':[186,85,211],'darkorchid':[153,50,204],'darkmagenta':[139,0,139],
+ 'mediumslateblue':[123,104,238],'darkslateblue':[72,61,139],'rebeccapurple':[102,51,153] };
+
+/* nearest named color by Euclidean RGB distance. */
+function nearestName(c){
+  var best='',bestD=1e18;
+  for(var k in NAMED){
+    var n=NAMED[k]; var d=Math.pow(n[0]-c.r,2)+Math.pow(n[1]-c.g,2)+Math.pow(n[2]-c.b,2);
+    if(d<bestD){bestD=d;best=k;}
+  }
+  return best;
+}
+
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  var max=Math.max(r,g,b), min=Math.min(r,g,b), l=(max+min)/2, s, h=0;
+  if(max===min){ h=0; s=0; }
+  else{
+    var d=max-min;
+    s=l>0.5?d/(2-max-min):d/(max+min);
+    if(max===r) h=(g-b)/d+(g<b?6:0);
+    else if(max===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;
+  }
+  return { h:round1(h), s:round1(s*100), l:round1(l*100) };
+}
+function rgbToHsv(r,g,b){
+  r/=255;g/=255;b/=255;
+  var max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min, v=max, s=0, h=0;
+  if(d!==0){
+    s=d/max;
+    if(max===r) h=((g-b)/d)%6;
+    else if(max===g) h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60; if(h<0) h+=360;
+  }
+  return {h:round1(h), s:round1(s*100), v:round1(v*100)};
+}
+/* naive subtractive CMYK from RGB (no under-colour removal). */
+function rgbToCmyk(r,g,b){
+  var R=r/255,G=g/255,B=b/255;
+  var K=1-Math.max(R,G,B);
+  if(K>=1) return {c:0,m:0,y:0,k:round1(K*100)};
+  var C=(1-R-K)/(1-K),M=(1-G-K)/(1-K),Y=(1-B-K)/(1-K);
+  return {c:round1(C*100),m:round1(M*100),y:round1(Y*100),k:round1(K*100)};
+}
+function round1(x){ return Math.round(x*10)/10; }
+
+function hexFrom(c, withAlpha){
+  if(withAlpha && c.a<255){
+    var aa=(c.a<16?'0':'')+c.a.toString(16);
+    return '#'+p(c.r)+p(c.g)+p(c.b)+aa;
+  }
+  return '#'+p(c.r)+p(c.g)+p(c.b);
+}
+function p(x){ var h=x.toString(16).toUpperCase(); return h.length<2?'0'+h:h; }
+
+function card(label,val,emptyNote){
+  return '<div class="out">'+
+    '<div class="ot">'+esc(label)+'</div>'+
+    '<div class="ov">'+(val===''?'<span class="muted">'+esc(emptyNote||'—')+'</span>':esc(val))+'</div>'+
+    '<div class="c"><button data-copy="'+esc(val)+'" data-label="'+esc(label)+'">copy</button></div>'+
+    '</div>';
+}
+
+function render(){
+  var text=inEl.value;
+  errEl.innerHTML=''; swatchEl.innerHTML='';
+  if(!text.trim()){
+    memoEl.textContent='';
+    gridEl.innerHTML='<p class="muted" style="font-family:inherit;padding:12px">Type a color to convert it.</p>';
+    bindCopyButtons();
+    return;
+  }
+  var c=parseColor(text);
+  if(c===null){
+    memoEl.textContent=''; gridEl.innerHTML='';
+    errEl.innerHTML='<div class="err">Not a recognised color. Try <code>#ff8800</code>, <code>rgb(255 136 0)</code>, <code>hsl(213 100% 50%)</code> or a name like <code>tomato</code>.</div>';
+    bindCopyButtons(); return;
+  }
+  var alpha=Math.round(c.a/255*100);
+  var shortHex=hexFrom(c,false);
+  var alphaHex=hexFrom(c,true);
+  var hsl=rgbToHsl(c.r,c.g,c.b);
+  var hsv=rgbToHsv(c.r,c.g,c.b);
+  var cmyk=rgbToCmyk(c.r,c.g,c.b);
+  var name=nearestName(c);
+  memoEl.textContent=c.r+' '+c.g+' '+c.b+(c.a<255?(' · alpha '+alpha+'%'):'');
+  swatchEl.innerHTML='<div class="swatch" style="height:72px;width:100%;background:'+cssColor(c)+';border:1px solid var(--line)"></div>';
+  var html=card('name (nearest)', name) +
+    card('hex', shortHex) +
+    card('hex (alpha)', alphaHex) +
+    card('rgb()', 'rgb('+c.r+' '+c.g+' '+c.b+(c.a<255?(' / '+alpha):'')+')') +
+    card('hsl()', 'hsl('+hsl.h+' '+hsl.s+'% '+hsl.l+'%)') +
+    card('hsla()', (c.a<255?'hsla(':'hsl(')+hsl.h+' '+hsl.s+'% '+hsl.l+'%'+(c.a<255?(' / '+alpha+')'):')')) +
+    card('hsv', 'hsv('+hsv.h+'° '+hsv.s+'% '+hsv.v+'%') +
+    card('cmyk', 'cmyk('+cmyk.c+'% '+cmyk.m+'% '+cmyk.y+'% '+cmyk.k+'%)');
+  gridEl.innerHTML=html;
+  bindCopyButtons();
+}
+function cssColor(c){ return 'rgba('+c.r+','+c.g+','+c.b+','+(c.a/255)+')'; }
+
+function bindCopyButtons(){
+  var btns=gridEl.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    var btn=btns[i];
+    btn.addEventListener('click',function(){
+      var v=btn.getAttribute('data-copy'), lab=btn.getAttribute('data-label');
+      if(v){ navigator.clipboard.writeText(v).then(function(){ showToast(lab+' copied'); },
+        function(){ try{ prompt('Copy '+lab+':', v); }catch(e){} }); }
+    });
+  }
+}
+
+/* ---------- share-link wiring (base64url) ---------- */
+function linkEncode(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); }
+function linkDecode(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  try{ return decodeURIComponent(escape(atob(t))); }catch(e){ return ''; }
+}
+// hash form: #c=<b64value>
+function tryLoad(){
+  var h=window.location.hash;
+  if(h&&h.substring(0,3)==='#c='){
+    var v=linkDecode(h.substring(3));
+    if(v!=='') inEl.value=v;
+  }
+}
+function updateHash(){
+  var v=inEl.value.trim();
+  if(v==='') history.replaceState(null,'',window.location.pathname+window.location.search);
+  else history.replaceState(null,'','#c='+linkEncode(v));
+}
+function showToast(msg){
+  toastEl.textContent=msg; toastEl.style.opacity='1';
+  setTimeout(function(){toastEl.style.opacity='0';},1400);
+}
+
+inEl.addEventListener('input',function(){ render(); updateHash(); });
+tryLoad();
+render();
+window.addEventListener('hashchange', function(){ tryLoad(); render(); });
+</script>
+</body>
+</html>
