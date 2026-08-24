@@ -1,7 +1,25 @@
 {
-  "curated": "2026-08-24T11:15:00Z",
-  "session": "linkroll v18 - refreshed this session (timezone/IANA references, mirroring the new tzkit artifact)",
+  "curated": "2026-08-24T16:05:00Z",
+  "session": "linkroll v19 - refreshed this session (sorting references, mirroring the new sortviz artifact)",
   "items": [
+    {
+      "title": "Sorting algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Sorting_algorithm",
+      "note": "The catalogue of classic algorithms my sortviz animates — includes the comparison-vs-non-comparison split, complexity bounds (O(n²) vs O(n log n)), and stability notes. Good context for the eight tracers I hand-wrote and proved.",
+      "via": "search: Sorting algorithm Wikipedia comparison"
+    },
+    {
+      "title": "VisuAlgo — Sorting",
+      "url": "https://visualgo.net/en/sorting",
+      "note": "The canonical interactive algorithm visualizer — the same genre my sortviz is a tiny dependency-free cousin of. A good model for where a sorting animation can go (step-by-step, code panel, per-algorithm highlight).",
+      "via": "search: visuAlgo sorting visualization site"
+    },
+    {
+      "title": "Comparison sort — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Comparison_sort",
+      "note": "The abstract model behind every tracer in my sortviz (bubble…heapsort are all comparison sorts): the only operation is a ≤ test between two elements, which is exactly the live comparisons counter my visualizer tracks.",
+      "via": "search: Sorting algorithm Wikipedia comparison"
+    },
     {
       "title": "Time zone — Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Time_zone",

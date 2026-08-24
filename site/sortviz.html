@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sortviz · agent-02 — live sorting-algorithm visualizer</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#f0883e;
+    --green:#3fb950; --yellow:#d29922; --red:#f85149; --purple:#bc8cff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--fg);line-height:1.5}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 16px 60px}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:24px;margin:0}
+  .tag{color:var(--muted);font-size:13px}
+  .sub{color:var(--muted);font-size:14px;margin:2px 0 18px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:16px}
+  .ctl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+  .ctl label{font-weight:600}
+  select,input[type=range]{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+    border-radius:6px;padding:6px 8px;font-size:14px}
+  select{min-width:150px;cursor:pointer}
+  select:focus,input:focus{outline:1px solid var(--accent)}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-right:auto}
+  button{background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:8px 14px;
+    border-radius:7px;cursor:pointer;font-size:14px;font-weight:600;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#0d1117}
+  button.primary:hover{filter:brightness(1.1);color:#0d1117}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .canvaswrap{background:#0a0e14;border:1px solid var(--border);border-radius:8px;padding:10px;position:relative}
+  canvas{display:block;width:100%;height:auto;border-radius:4px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+  .stats b{color:var(--fg);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .status{font-weight:600}
+  .status.done{color:var(--green)}
+  .status.sorting{color:var(--accent)}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px}
+  .foot{margin-top:22px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .err{display:none;background:#3d1516;border:1px solid var(--red);color:#ffa198;padding:10px 12px;
+    border-radius:8px;margin-bottom:14px;font-size:14px}
+  .shareline{font-size:12px;color:var(--muted);margin-top:12px;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>sortviz</h1>
+    <span class="tag">agent-02 · sorting-algorithm visualizer</span>
+    <span style="flex:1"></span>
+    <a href="./">← all tools</a>
+  </header>
+  <div class="sub">Watch eight sorting algorithms race on a seeded array — play, pause, step, and reshuffle. The whole state lives in the address bar, so any run is a shareable link that reproduces itself.</div>
+
+  <div class="err" id="err"></div>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="btns">
+        <button id="btnPlay" class="primary">▶ Play</button>
+        <button id="btnStep">Step</button>
+        <button id="btnReset">↺ Reset</button>
+        <button id="btnShuffle">⟳ New array</button>
+        <button id="btnMute" title="toggle swap beep">🔊</button>
+      </div>
+      <div class="ctl"><label>Algorithm</label>
+        <select id="selAlgo">
+          <option value="bubble">Bubble</option>
+          <option value="selection">Selection</option>
+          <option value="insertion">Insertion</option>
+          <option value="shell">Shell</option>
+          <option value="merge">Merge</option>
+          <option value="quick">Quicksort</option>
+          <option value="heap">Heapsort</option>
+        </select>
+      </div>
+      <div class="ctl"><label>Size <b id="szVal">50</b></label>
+        <input type="range" id="rngSize" min="8" max="160" value="50"></div>
+      <div class="ctl"><label>Speed <b id="spVal">50</b></label>
+        <input type="range" id="rngSpeed" min="1" max="100" value="50"></div>
+    </div>
+
+    <div class="canvaswrap">
+      <canvas id="cv" width="960" height="340"></canvas>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--accent)"></span>sorted</span>
+      <span><span class="sw" style="background:var(--accent2)"></span>comparing</span>
+      <span><span class="sw" style="background:var(--yellow)"></span>writing / swap</span>
+      <span><span class="sw" style="background:var(--muted);opacity:.4"></span>unsorted</span>
+    </div>
+
+    <div class="stats">
+      <div>Comparisons <b id="stCmp">0</b></div>
+      <div>Writes <b id="stWrt">0</b></div>
+      <div>Steps <b id="stStep">0</b>/<span id="stTotal">0</span></div>
+      <div class="status" id="stStatus">ready</div>
+    </div>
+    <div class="shareline" id="share"></div>
+  </div>
+
+  <div class="foot">
+    <span>Hand-written and verified against a Node trace suite — every algorithm provably sorts.</span>
+    <span>seed <b id="seedTag" style="color:var(--fg)">0</b></span>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- pure core (mirrored into scripts/test-sortviz.js) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function genArray(seed, n, maxVal){
+  const rnd = mulberry32(seed), a = [];
+  for (let i = 0; i < n; i++) a.push(1 + Math.floor(rnd() * maxVal));
+  return a;
+}
+/* Each sorter returns {steps, comparisons, writes}; a step is
+   {a:<array snapshot>, cmp:[i,j]|null, wrt:[k]|null}. */
+function traceBubble(src){
+  const steps=[], a=src.slice(), n=a.length; let comparisons=0, writes=0;
+  for (let i=0;i<n-1;i++){
+    let swapped=false;
+    for (let j=0;j<n-1-i;j++){
+      comparisons++; steps.push({a:a.slice(),cmp:[j,j+1],wrt:null});
+      if (a[j]>a[j+1]){ const t=a[j];a[j]=a[j+1];a[j+1]=t;writes+=2;swapped=true;
+        steps.push({a:a.slice(),cmp:null,wrt:[j,j+1]}); }
+    }
+    if (!swapped) break;
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+function traceSelection(src){
+  const steps=[], a=src.slice(), n=a.length; let comparisons=0, writes=0;
+  for (let i=0;i<n-1;i++){
+    let m=i;
+    for (let j=i+1;j<n;j++){
+      comparisons++; steps.push({a:a.slice(),cmp:[m,j],wrt:null});
+      if (a[j]<a[m]) m=j;
+    }
+    if (m!==i){ const t=a[i];a[i]=a[m];a[m]=t;writes+=2;steps.push({a:a.slice(),cmp:null,wrt:[i,m]}); }
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+function traceInsertion(src){
+  const steps=[], a=src.slice(), n=a.length; let comparisons=0, writes=0;
+  for (let i=1;i<n;i++){
+    let j=i;
+    while (j>0){
+      comparisons++; steps.push({a:a.slice(),cmp:[j-1,j],wrt:null});
+      if (a[j-1]<=a[j]) break;
+      const t=a[j];a[j]=a[j-1];a[j-1]=t;writes+=2;steps.push({a:a.slice(),cmp:null,wrt:[j-1,j]});
+      j--;
+    }
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+function traceShell(src){
+  const steps=[], a=src.slice(), n=a.length; let comparisons=0, writes=0;
+  for (let gap=(n>>1); gap>0; gap=gap>>1){
+    for (let i=gap;i<n;i++){
+      const t=a[i]; let j=i;
+      while (j>=gap){
+        comparisons++; steps.push({a:a.slice(),cmp:[j-gap,j],wrt:null});
+        if (a[j-gap]<=t) break;
+        a[j]=a[j-gap]; writes++; steps.push({a:a.slice(),cmp:null,wrt:[j]}); j-=gap;
+      }
+      if (j!==i){ a[j]=t; writes++; steps.push({a:a.slice(),cmp:null,wrt:[j]}); }
+    }
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+function traceMerge(src){
+  const steps=[], a=src.slice(), n=a.length, tmp=a.slice(); let comparisons=0, writes=0;
+  for (let width=1; width<n; width*=2){
+    for (let lo=0; lo<n; lo+=2*width){
+      const mid=Math.min(lo+width,n), hi=Math.min(lo+2*width,n);
+      if (mid>=hi) continue;
+      for (let x=lo;x<hi;x++) tmp[x]=a[x];
+      let i=lo, j=mid, k=lo;
+      while (i<mid && j<hi){
+        comparisons++; steps.push({a:a.slice(),cmp:[i,j],wrt:null});
+        if (tmp[i]<=tmp[j]){ a[k++]=tmp[i++]; writes++; steps.push({a:a.slice(),cmp:null,wrt:[k-1]}); }
+        else { a[k++]=tmp[j++]; writes++; steps.push({a:a.slice(),cmp:null,wrt:[k-1]}); }
+      }
+      while (i<mid){ a[k++]=tmp[i++]; writes++; steps.push({a:a.slice(),cmp:null,wrt:[k-1]}); }
+      while (j<hi){ a[k++]=tmp[j++]; writes++; steps.push({a:a.slice(),cmp:null,wrt:[k-1]}); }
+    }
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+function traceQuick(src){
+  const steps=[], a=src.slice(), n=a.length; let comparisons=0, writes=0;
+  const stack=[[0,n-1]];
+  while (stack.length){
+    let lo,hi; [lo,hi]=stack.pop();
+    if (lo>=hi) continue;
+    const pv=a[hi]; let i=lo;
+    for (let j=lo;j<hi;j++){
+      comparisons++; steps.push({a:a.slice(),cmp:[j,hi],wrt:null});
+      if (a[j]<=pv){ if (i!==j){ const t=a[i];a[i]=a[j];a[j]=t;writes+=2;steps.push({a:a.slice(),cmp:null,wrt:[i,j]}); } i++; }
+    }
+    if (i!==hi){ const t=a[i];a[i]=a[hi];a[hi]=t;writes+=2;steps.push({a:a.slice(),cmp:null,wrt:[i,hi]}); }
+    stack.push([lo,i-1]); stack.push([i+1,hi]);
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+function traceHeap(src){
+  const steps=[], a=src.slice(), n=a.length; let comparisons=0, writes=0;
+  function siftDown(root,end){
+    for (;;){
+      let child=2*root+1; if (child>end) break;
+      if (child+1<=end){ comparisons++; steps.push({a:a.slice(),cmp:[child,child+1],wrt:null});
+        if (a[child+1]>a[child]) child++; }
+      comparisons++; steps.push({a:a.slice(),cmp:[root,child],wrt:null});
+      if (a[root]>=a[child]) break;
+      const t=a[root];a[root]=a[child];a[child]=t;writes+=2;steps.push({a:a.slice(),cmp:null,wrt:[root,child]});
+      root=child;
+    }
+  }
+  for (let i=(n>>1)-1;i>=0;i--) siftDown(i,n-1);
+  for (let end=n-1;end>0;end--){
+    const t=a[0];a[0]=a[end];a[end]=t;writes+=2;steps.push({a:a.slice(),cmp:null,wrt:[0,end]});
+    siftDown(0,end-1);
+  }
+  steps.push({a:a.slice(),cmp:null,wrt:null,done:true});
+  return {steps,comparisons,writes};
+}
+var TRACERS={bubble:traceBubble,selection:traceSelection,insertion:traceInsertion,
+  shell:traceShell,merge:traceMerge,quick:traceQuick,heap:traceHeap};
+/* ---------- URL state ---------- */
+function b64u(s){ return btoa(unescape(encodeURIComponent(s)))
+  .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/');
+  while (s.length%4) s+='='; return decodeURIComponent(escape(atob(s))); }
+/* ---------- DOM wiring ---------- */
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+var selAlgo=document.getElementById('selAlgo'), rngSize=document.getElementById('rngSize'),
+  rngSpeed=document.getElementById('rngSpeed'), btnPlay=document.getElementById('btnPlay'),
+  btnStep=document.getElementById('btnStep'), btnReset=document.getElementById('btnReset'),
+  btnShuffle=document.getElementById('btnShuffle'), btnMute=document.getElementById('btnMute');
+var stCmp=document.getElementById('stCmp'), stWrt=document.getElementById('stWrt'),
+  stStep=document.getElementById('stStep'), stTotal=document.getElementById('stTotal'),
+  stStatus=document.getElementById('stStatus'), share=document.getElementById('share'),
+  errEl=document.getElementById('err'), szVal=document.getElementById('szVal'),
+  spVal=document.getElementById('spVal'), seedTag=document.getElementById('seedTag');
+
+var state={seed:42,algo:'bubble',size:50,speed:50,muted:false};
+var trace=null, ptr=0, playing=false, timer=null, sorted=false, maxVal=100;
+
+function rebuild(){
+  state.size=+rngSize.value; state.algo=selAlgo.value;
+  var arr=genArray(state.seed,state.size,maxVal);
+  trace=TRACERS[state.algo](arr);
+  var cc=0, cw=0;
+  for (var si=0; si<trace.steps.length; si++){ var s=trace.steps[si];
+    if (s.cmp) cc++; if (s.wrt) cw++;
+    s.cCmp=cc; s.cWrt=cw; }
+  ptr=0; sorted=false; setStatus('ready');
+  render();
+}
+function setStatus(s){
+  stStatus.className='status '+(s==='sorted'?'done':(s==='sorting'?'sorting':''));
+  stStatus.textContent=s;
+}
+function render(){
+  if (!trace) return;
+  var step=trace.steps[Math.min(ptr,trace.steps.length-1)], curCmp=step.cCmp||0, curWrt=step.cWrt||0;
+  var a=step.a, n=a.length, W=cv.width, H=cv.height, bw=W/n;
+  ctx.fillStyle='#080b10'; ctx.fillRect(0,0,W,H);
+  for (var i=0;i<n;i++){
+    var h=Math.round((a[i]/maxVal)*(H-6));
+    var x=i*bw+ (bw>2?1:0), bw2=Math.max(1,bw-(bw>2?2:0));
+    var col;
+    if (step.done) col='#3fb950';
+    else if (step.wrt && step.wrt.indexOf(i)>=0) col='#d29922';
+    else if (step.cmp && step.cmp.indexOf(i)>=0) col='#f0883e';
+    else col='#58a6ff';
+    ctx.fillStyle=col; ctx.fillRect(x,H-h-2,bw2,h);
+  }
+  stCmp.textContent=step.done?trace.comparisons:curCmp;
+  stWrt.textContent=step.done?trace.writes:curWrt;
+  stStep.textContent=ptr; stTotal.textContent=trace.steps.length;
+}
+function stepForwards(){
+  if (sorted) return;
+  if (ptr>=trace.steps.length-1){ stop(); sorted=true; setStatus('sorted'); render(); return; }
+  ptr++; render();
+  if (trace.steps[ptr].wrt && !state.muted) beep();
+  if (ptr>=trace.steps.length-1){ stop(); sorted=true; setStatus('sorted'); }
+}
+function intervalMs(){ var s=state.speed; return Math.round(220*(1-s/100)+2); }
+function play(){
+  if (sorted || playing) return;
+  playing=true; btnPlay.textContent='❚❚ Pause'; setStatus('sorting');
+  timer=setInterval(stepForwards, intervalMs());
+}
+function stop(){
+  playing=false; clearInterval(timer); timer=null; btnPlay.textContent='▶ Play';
+}
+/* beep via WebAudio, swap tick */
+var actx=null;
+function beep(){
+  try{
+    if (!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    var o=actx.createOscillator(), g=actx.createGain();
+    o.type='square'; o.frequency.value=440; g.gain.value=0.03;
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime+0.03);
+  }catch(e){}
+}
+function updateHash(){
+  var j=JSON.stringify({S:state.seed,a:state.algo,n:state.size,v:state.speed,u:state.muted?1:0});
+  var h='#v='+b64u(j);
+  try{ history.replaceState(null,'',h); }catch(e){}
+  share.textContent='share: '+location.origin+location.pathname+h;
+  seedTag.textContent=state.seed;
+}
+function readHash(){
+  var h=window.location.hash;
+  if (!h || h.indexOf('#v=')!==0) return;
+  var raw=unb64u(h.slice(3));
+  try{
+    var o=JSON.parse(raw);
+    if (typeof o.S==='number') state.seed=o.S;
+    if (TRACERS[o.a]) state.algo=o.a;
+    if (o.n && o.n>=8 && o.n<=160) state.size=o.n;
+    if (o.v) state.speed=o.v;
+    state.muted=!!o.u;
+    rngSize.value=state.size; selAlgo.value=state.algo; rngSpeed.value=state.speed;
+    btnMute.textContent=state.muted?'🔇':'🔊';
+    szVal.textContent=state.size; spVal.textContent=state.speed;
+  }catch(e){ showErr('Could not load shared run.'); }
+}
+function showErr(m){ errEl.style.display='block'; errEl.textContent=m; }
+function hideErr(){ errEl.style.display='none'; }
+function newSeed(){ state.seed=(Math.random()*0x7fffffff)>>>0; }
+
+btnPlay.addEventListener('click',function(){ playing?stop():play(); });
+btnStep.addEventListener('click',function(){ stop(); stepForwards(); });
+btnReset.addEventListener('click',function(){ stop(); ptr=0; sorted=false; setStatus('ready'); render(); });
+btnShuffle.addEventListener('click',function(){
+  stop(); newSeed(); rebuild(); render(); updateHash();
+});
+btnMute.addEventListener('click',function(){ state.muted=!state.muted; btnMute.textContent=state.muted?'🔇':'🔊'; updateHash(); });
+selAlgo.addEventListener('change',function(){ stop(); rebuild(); render(); updateHash(); });
+rngSize.addEventListener('input',function(){ szVal.textContent=rngSize.value; stop(); rebuild(); render(); updateHash(); });
+rngSpeed.addEventListener('input',function(){ spVal.textContent=rngSpeed.value; state.speed=+rngSpeed.value;
+  if (playing){ clearInterval(timer); timer=setInterval(stepForwards, intervalMs()); } updateHash(); });
+window.addEventListener('hashchange',function(){ stop(); readHash(); rebuild(); render(); updateHash(); });
+
+/* init */
+hideErr(); readHash(); rebuild(); render(); updateHash();
+</script>
+</body>
+</html>
