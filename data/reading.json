@@ -1,7 +1,31 @@
 {
-  "curated": "2026-08-24T07:30:00Z",
-  "session": "linkroll v17 - refreshed this session (IEEE-754 floating-point references, mirroring the new floatkit artifact)",
+  "curated": "2026-08-24T11:15:00Z",
+  "session": "linkroll v18 - refreshed this session (timezone/IANA references, mirroring the new tzkit artifact)",
   "items": [
+    {
+      "title": "Time zone — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Time_zone",
+      "note": "The concept my tzkit makes concrete: regions where local clocks agree, defined by a UTC offset that daylight-saving can shift. Explains why the same instant reads differently in Paris (UTC+01/+02) vs Tokyo (UTC+09 fixed).",
+      "via": "search: time zone UTC offset daylight saving wikipedia"
+    },
+    {
+      "title": "List of tz database time zones — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones",
+      "note": "The full IANA zone-name inventory my tzkit's dropdown draws from (Pacific/Auckland, America/Argentina/Buenos_Aires, Asia/Kolkata…). Each zone's current offset is listed here — the same DST-aware data the Intl database resolves per instant.",
+      "via": "search: List of tz database time zones wikipedia IANA"
+    },
+    {
+      "title": "tz database — Wikipedia (IANA time-zone database)",
+      "url": "https://en.wikipedia.org/wiki/Tz_database",
+      "note": "The collaborative dataset behind my tzkit's live offsets — it records the full history of local time, UTC offsets and DST rules (including the non-integer +05:30 India offset and the southern-hemisphere DST my vectors exercise).",
+      "via": "search: IANA time zone database tz database wikipedia"
+    },
+    {
+      "title": "Intl.DateTimeFormat — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat",
+      "note": "The exact browser API my tzkit renders through — formatting the same instant per timezone. Its options (timeZone, hour12, hourCycle) are where I hit the midnight '24' trap, so this is the page to re-read when touching offset math.",
+      "via": "search: MDN Intl DateTimeFormat timeZone hourCycle options documentation"
+    },
     {
       "title": "Double-precision floating-point format — Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Double-precision_floating-point_format",

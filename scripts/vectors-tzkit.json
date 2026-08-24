@@ -1,0 +1,2631 @@
+{
+ "zones": [
+  "Etc/UTC",
+  "Pacific/Midway",
+  "Pacific/Honolulu",
+  "America/Anchorage",
+  "America/Los_Angeles",
+  "America/Denver",
+  "America/Chicago",
+  "America/New_York",
+  "America/Toronto",
+  "America/Sao_Paulo",
+  "America/Argentina/Buenos_Aires",
+  "Atlantic/Reykjavik",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/Athens",
+  "Europe/Moscow",
+  "Asia/Dubai",
+  "Asia/Karachi",
+  "Asia/Kolkata",
+  "Asia/Bangkok",
+  "Asia/Shanghai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Pacific/Auckland"
+ ],
+ "vectors": [
+  {
+   "epoch": 0,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "1970-01-01T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "1969-12-31T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "1969-12-31T14:00:00",
+   "wall": {
+    "hour": 14,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 50400
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Anchorage",
+   "offset": "UTC-10:00",
+   "iso": "1969-12-31T14:00:00",
+   "wall": {
+    "hour": 14,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 50400
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-08:00",
+   "iso": "1969-12-31T16:00:00",
+   "wall": {
+    "hour": 16,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 57600
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Denver",
+   "offset": "UTC-07:00",
+   "iso": "1969-12-31T17:00:00",
+   "wall": {
+    "hour": 17,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 61200
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Chicago",
+   "offset": "UTC-06:00",
+   "iso": "1969-12-31T18:00:00",
+   "wall": {
+    "hour": 18,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 64800
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/New_York",
+   "offset": "UTC-05:00",
+   "iso": "1969-12-31T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Toronto",
+   "offset": "UTC-05:00",
+   "iso": "1969-12-31T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "1969-12-31T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "1969-12-31T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 1969-12-31",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "1970-01-01T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "1970-01-01T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Europe/Paris",
+   "offset": "UTC+01:00",
+   "iso": "1970-01-01T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+01:00",
+   "iso": "1970-01-01T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Europe/Athens",
+   "offset": "UTC+02:00",
+   "iso": "1970-01-01T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "1970-01-01T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "1970-01-01T04:00:00",
+   "wall": {
+    "hour": 4,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 14400
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "1970-01-01T05:00:00",
+   "wall": {
+    "hour": 5,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 18000
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "1970-01-01T05:30:00",
+   "wall": {
+    "hour": 5,
+    "minute": 30,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 19800
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "1970-01-01T07:00:00",
+   "wall": {
+    "hour": 7,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 25200
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "1970-01-01T08:00:00",
+   "wall": {
+    "hour": 8,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 28800
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "1970-01-01T09:00:00",
+   "wall": {
+    "hour": 9,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 32400
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+10:00",
+   "iso": "1970-01-01T10:00:00",
+   "wall": {
+    "hour": 10,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 36000
+   }
+  },
+  {
+   "epoch": 0,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+12:00",
+   "iso": "1970-01-01T12:00:00",
+   "wall": {
+    "hour": 12,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 1970-01-01",
+    "sod": 43200
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2023-11-14T22:13:20",
+   "wall": {
+    "hour": 22,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 80000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2023-11-14T11:13:20",
+   "wall": {
+    "hour": 11,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 40400
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2023-11-14T12:13:20",
+   "wall": {
+    "hour": 12,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 44000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Anchorage",
+   "offset": "UTC-09:00",
+   "iso": "2023-11-14T13:13:20",
+   "wall": {
+    "hour": 13,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 47600
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-08:00",
+   "iso": "2023-11-14T14:13:20",
+   "wall": {
+    "hour": 14,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 51200
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Denver",
+   "offset": "UTC-07:00",
+   "iso": "2023-11-14T15:13:20",
+   "wall": {
+    "hour": 15,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 54800
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Chicago",
+   "offset": "UTC-06:00",
+   "iso": "2023-11-14T16:13:20",
+   "wall": {
+    "hour": 16,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 58400
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/New_York",
+   "offset": "UTC-05:00",
+   "iso": "2023-11-14T17:13:20",
+   "wall": {
+    "hour": 17,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 62000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Toronto",
+   "offset": "UTC-05:00",
+   "iso": "2023-11-14T17:13:20",
+   "wall": {
+    "hour": 17,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 62000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2023-11-14T19:13:20",
+   "wall": {
+    "hour": 19,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 69200
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2023-11-14T19:13:20",
+   "wall": {
+    "hour": 19,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 69200
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2023-11-14T22:13:20",
+   "wall": {
+    "hour": 22,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 80000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Europe/London",
+   "offset": "UTC+00:00",
+   "iso": "2023-11-14T22:13:20",
+   "wall": {
+    "hour": 22,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 80000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Europe/Paris",
+   "offset": "UTC+01:00",
+   "iso": "2023-11-14T23:13:20",
+   "wall": {
+    "hour": 23,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 83600
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+01:00",
+   "iso": "2023-11-14T23:13:20",
+   "wall": {
+    "hour": 23,
+    "minute": 13,
+    "second": 20,
+    "date": "Tue, 2023-11-14",
+    "sod": 83600
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Europe/Athens",
+   "offset": "UTC+02:00",
+   "iso": "2023-11-15T00:13:20",
+   "wall": {
+    "hour": 0,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 800
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2023-11-15T01:13:20",
+   "wall": {
+    "hour": 1,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 4400
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2023-11-15T02:13:20",
+   "wall": {
+    "hour": 2,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 8000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2023-11-15T03:13:20",
+   "wall": {
+    "hour": 3,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 11600
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2023-11-15T03:43:20",
+   "wall": {
+    "hour": 3,
+    "minute": 43,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 13400
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2023-11-15T05:13:20",
+   "wall": {
+    "hour": 5,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 18800
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2023-11-15T06:13:20",
+   "wall": {
+    "hour": 6,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 22400
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2023-11-15T07:13:20",
+   "wall": {
+    "hour": 7,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 26000
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+11:00",
+   "iso": "2023-11-15T09:13:20",
+   "wall": {
+    "hour": 9,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 33200
+   }
+  },
+  {
+   "epoch": 1700000000,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+13:00",
+   "iso": "2023-11-15T11:13:20",
+   "wall": {
+    "hour": 11,
+    "minute": 13,
+    "second": 20,
+    "date": "Wed, 2023-11-15",
+    "sod": 40400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2025-06-15T15:06:40",
+   "wall": {
+    "hour": 15,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 54400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2025-06-15T04:06:40",
+   "wall": {
+    "hour": 4,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 14800
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2025-06-15T05:06:40",
+   "wall": {
+    "hour": 5,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 18400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Anchorage",
+   "offset": "UTC-08:00",
+   "iso": "2025-06-15T07:06:40",
+   "wall": {
+    "hour": 7,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 25600
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-07:00",
+   "iso": "2025-06-15T08:06:40",
+   "wall": {
+    "hour": 8,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 29200
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Denver",
+   "offset": "UTC-06:00",
+   "iso": "2025-06-15T09:06:40",
+   "wall": {
+    "hour": 9,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 32800
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Chicago",
+   "offset": "UTC-05:00",
+   "iso": "2025-06-15T10:06:40",
+   "wall": {
+    "hour": 10,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 36400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/New_York",
+   "offset": "UTC-04:00",
+   "iso": "2025-06-15T11:06:40",
+   "wall": {
+    "hour": 11,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 40000
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Toronto",
+   "offset": "UTC-04:00",
+   "iso": "2025-06-15T11:06:40",
+   "wall": {
+    "hour": 11,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 40000
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2025-06-15T12:06:40",
+   "wall": {
+    "hour": 12,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 43600
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2025-06-15T12:06:40",
+   "wall": {
+    "hour": 12,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 43600
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2025-06-15T15:06:40",
+   "wall": {
+    "hour": 15,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 54400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "2025-06-15T16:06:40",
+   "wall": {
+    "hour": 16,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 58000
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Europe/Paris",
+   "offset": "UTC+02:00",
+   "iso": "2025-06-15T17:06:40",
+   "wall": {
+    "hour": 17,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 61600
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+02:00",
+   "iso": "2025-06-15T17:06:40",
+   "wall": {
+    "hour": 17,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 61600
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Europe/Athens",
+   "offset": "UTC+03:00",
+   "iso": "2025-06-15T18:06:40",
+   "wall": {
+    "hour": 18,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 65200
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2025-06-15T18:06:40",
+   "wall": {
+    "hour": 18,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 65200
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2025-06-15T19:06:40",
+   "wall": {
+    "hour": 19,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 68800
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2025-06-15T20:06:40",
+   "wall": {
+    "hour": 20,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 72400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2025-06-15T20:36:40",
+   "wall": {
+    "hour": 20,
+    "minute": 36,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 74200
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2025-06-15T22:06:40",
+   "wall": {
+    "hour": 22,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 79600
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2025-06-15T23:06:40",
+   "wall": {
+    "hour": 23,
+    "minute": 6,
+    "second": 40,
+    "date": "Sun, 2025-06-15",
+    "sod": 83200
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2025-06-16T00:06:40",
+   "wall": {
+    "hour": 0,
+    "minute": 6,
+    "second": 40,
+    "date": "Mon, 2025-06-16",
+    "sod": 400
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+10:00",
+   "iso": "2025-06-16T01:06:40",
+   "wall": {
+    "hour": 1,
+    "minute": 6,
+    "second": 40,
+    "date": "Mon, 2025-06-16",
+    "sod": 4000
+   }
+  },
+  {
+   "epoch": 1750000000,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+12:00",
+   "iso": "2025-06-16T03:06:40",
+   "wall": {
+    "hour": 3,
+    "minute": 6,
+    "second": 40,
+    "date": "Mon, 2025-06-16",
+    "sod": 11200
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2024-04-01T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2024-03-31T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2024-03-31T14:00:00",
+   "wall": {
+    "hour": 14,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 50400
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Anchorage",
+   "offset": "UTC-08:00",
+   "iso": "2024-03-31T16:00:00",
+   "wall": {
+    "hour": 16,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 57600
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-07:00",
+   "iso": "2024-03-31T17:00:00",
+   "wall": {
+    "hour": 17,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 61200
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Denver",
+   "offset": "UTC-06:00",
+   "iso": "2024-03-31T18:00:00",
+   "wall": {
+    "hour": 18,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 64800
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Chicago",
+   "offset": "UTC-05:00",
+   "iso": "2024-03-31T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/New_York",
+   "offset": "UTC-04:00",
+   "iso": "2024-03-31T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Toronto",
+   "offset": "UTC-04:00",
+   "iso": "2024-03-31T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2024-03-31T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2024-03-31T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-03-31",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2024-04-01T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "2024-04-01T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Europe/Paris",
+   "offset": "UTC+02:00",
+   "iso": "2024-04-01T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+02:00",
+   "iso": "2024-04-01T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Europe/Athens",
+   "offset": "UTC+03:00",
+   "iso": "2024-04-01T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2024-04-01T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2024-04-01T04:00:00",
+   "wall": {
+    "hour": 4,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 14400
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2024-04-01T05:00:00",
+   "wall": {
+    "hour": 5,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 18000
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2024-04-01T05:30:00",
+   "wall": {
+    "hour": 5,
+    "minute": 30,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 19800
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2024-04-01T07:00:00",
+   "wall": {
+    "hour": 7,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 25200
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2024-04-01T08:00:00",
+   "wall": {
+    "hour": 8,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 28800
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2024-04-01T09:00:00",
+   "wall": {
+    "hour": 9,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 32400
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+11:00",
+   "iso": "2024-04-01T11:00:00",
+   "wall": {
+    "hour": 11,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 39600
+   }
+  },
+  {
+   "epoch": 1711929600,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+13:00",
+   "iso": "2024-04-01T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-04-01",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2024-04-03T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2024-04-02T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2024-04-02T14:00:00",
+   "wall": {
+    "hour": 14,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 50400
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Anchorage",
+   "offset": "UTC-08:00",
+   "iso": "2024-04-02T16:00:00",
+   "wall": {
+    "hour": 16,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 57600
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-07:00",
+   "iso": "2024-04-02T17:00:00",
+   "wall": {
+    "hour": 17,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 61200
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Denver",
+   "offset": "UTC-06:00",
+   "iso": "2024-04-02T18:00:00",
+   "wall": {
+    "hour": 18,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 64800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Chicago",
+   "offset": "UTC-05:00",
+   "iso": "2024-04-02T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/New_York",
+   "offset": "UTC-04:00",
+   "iso": "2024-04-02T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Toronto",
+   "offset": "UTC-04:00",
+   "iso": "2024-04-02T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2024-04-02T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2024-04-02T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Tue, 2024-04-02",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2024-04-03T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "2024-04-03T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Europe/Paris",
+   "offset": "UTC+02:00",
+   "iso": "2024-04-03T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+02:00",
+   "iso": "2024-04-03T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Europe/Athens",
+   "offset": "UTC+03:00",
+   "iso": "2024-04-03T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2024-04-03T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2024-04-03T04:00:00",
+   "wall": {
+    "hour": 4,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 14400
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2024-04-03T05:00:00",
+   "wall": {
+    "hour": 5,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 18000
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2024-04-03T05:30:00",
+   "wall": {
+    "hour": 5,
+    "minute": 30,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 19800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2024-04-03T07:00:00",
+   "wall": {
+    "hour": 7,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 25200
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2024-04-03T08:00:00",
+   "wall": {
+    "hour": 8,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 28800
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2024-04-03T09:00:00",
+   "wall": {
+    "hour": 9,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 32400
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+11:00",
+   "iso": "2024-04-03T11:00:00",
+   "wall": {
+    "hour": 11,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 39600
+   }
+  },
+  {
+   "epoch": 1712102400,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+13:00",
+   "iso": "2024-04-03T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2024-04-03",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2024-09-30T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2024-09-29T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2024-09-29T14:00:00",
+   "wall": {
+    "hour": 14,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 50400
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Anchorage",
+   "offset": "UTC-08:00",
+   "iso": "2024-09-29T16:00:00",
+   "wall": {
+    "hour": 16,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 57600
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-07:00",
+   "iso": "2024-09-29T17:00:00",
+   "wall": {
+    "hour": 17,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 61200
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Denver",
+   "offset": "UTC-06:00",
+   "iso": "2024-09-29T18:00:00",
+   "wall": {
+    "hour": 18,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 64800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Chicago",
+   "offset": "UTC-05:00",
+   "iso": "2024-09-29T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/New_York",
+   "offset": "UTC-04:00",
+   "iso": "2024-09-29T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Toronto",
+   "offset": "UTC-04:00",
+   "iso": "2024-09-29T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2024-09-29T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2024-09-29T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Sun, 2024-09-29",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2024-09-30T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "2024-09-30T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Europe/Paris",
+   "offset": "UTC+02:00",
+   "iso": "2024-09-30T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+02:00",
+   "iso": "2024-09-30T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Europe/Athens",
+   "offset": "UTC+03:00",
+   "iso": "2024-09-30T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2024-09-30T03:00:00",
+   "wall": {
+    "hour": 3,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 10800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2024-09-30T04:00:00",
+   "wall": {
+    "hour": 4,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 14400
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2024-09-30T05:00:00",
+   "wall": {
+    "hour": 5,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 18000
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2024-09-30T05:30:00",
+   "wall": {
+    "hour": 5,
+    "minute": 30,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 19800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2024-09-30T07:00:00",
+   "wall": {
+    "hour": 7,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 25200
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2024-09-30T08:00:00",
+   "wall": {
+    "hour": 8,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 28800
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2024-09-30T09:00:00",
+   "wall": {
+    "hour": 9,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 32400
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+10:00",
+   "iso": "2024-09-30T10:00:00",
+   "wall": {
+    "hour": 10,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 36000
+   }
+  },
+  {
+   "epoch": 1727654400,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+13:00",
+   "iso": "2024-09-30T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Mon, 2024-09-30",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2026-07-22T16:00:00",
+   "wall": {
+    "hour": 16,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 57600
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2026-07-22T05:00:00",
+   "wall": {
+    "hour": 5,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 18000
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2026-07-22T06:00:00",
+   "wall": {
+    "hour": 6,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 21600
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Anchorage",
+   "offset": "UTC-08:00",
+   "iso": "2026-07-22T08:00:00",
+   "wall": {
+    "hour": 8,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 28800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-07:00",
+   "iso": "2026-07-22T09:00:00",
+   "wall": {
+    "hour": 9,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 32400
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Denver",
+   "offset": "UTC-06:00",
+   "iso": "2026-07-22T10:00:00",
+   "wall": {
+    "hour": 10,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 36000
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Chicago",
+   "offset": "UTC-05:00",
+   "iso": "2026-07-22T11:00:00",
+   "wall": {
+    "hour": 11,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 39600
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/New_York",
+   "offset": "UTC-04:00",
+   "iso": "2026-07-22T12:00:00",
+   "wall": {
+    "hour": 12,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 43200
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Toronto",
+   "offset": "UTC-04:00",
+   "iso": "2026-07-22T12:00:00",
+   "wall": {
+    "hour": 12,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 43200
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2026-07-22T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2026-07-22T13:00:00",
+   "wall": {
+    "hour": 13,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 46800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2026-07-22T16:00:00",
+   "wall": {
+    "hour": 16,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 57600
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "2026-07-22T17:00:00",
+   "wall": {
+    "hour": 17,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 61200
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Europe/Paris",
+   "offset": "UTC+02:00",
+   "iso": "2026-07-22T18:00:00",
+   "wall": {
+    "hour": 18,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 64800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+02:00",
+   "iso": "2026-07-22T18:00:00",
+   "wall": {
+    "hour": 18,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 64800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Europe/Athens",
+   "offset": "UTC+03:00",
+   "iso": "2026-07-22T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2026-07-22T19:00:00",
+   "wall": {
+    "hour": 19,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 68400
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2026-07-22T20:00:00",
+   "wall": {
+    "hour": 20,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 72000
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2026-07-22T21:00:00",
+   "wall": {
+    "hour": 21,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 75600
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2026-07-22T21:30:00",
+   "wall": {
+    "hour": 21,
+    "minute": 30,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 77400
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2026-07-22T23:00:00",
+   "wall": {
+    "hour": 23,
+    "minute": 0,
+    "second": 0,
+    "date": "Wed, 2026-07-22",
+    "sod": 82800
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2026-07-23T00:00:00",
+   "wall": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 2026-07-23",
+    "sod": 0
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2026-07-23T01:00:00",
+   "wall": {
+    "hour": 1,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 2026-07-23",
+    "sod": 3600
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+10:00",
+   "iso": "2026-07-23T02:00:00",
+   "wall": {
+    "hour": 2,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 2026-07-23",
+    "sod": 7200
+   }
+  },
+  {
+   "epoch": 1784736000,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+12:00",
+   "iso": "2026-07-23T04:00:00",
+   "wall": {
+    "hour": 4,
+    "minute": 0,
+    "second": 0,
+    "date": "Thu, 2026-07-23",
+    "sod": 14400
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Etc/UTC",
+   "offset": "UTC+00:00",
+   "iso": "2026-08-17T20:53:20",
+   "wall": {
+    "hour": 20,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 75200
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Pacific/Midway",
+   "offset": "UTC-11:00",
+   "iso": "2026-08-17T09:53:20",
+   "wall": {
+    "hour": 9,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 35600
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Pacific/Honolulu",
+   "offset": "UTC-10:00",
+   "iso": "2026-08-17T10:53:20",
+   "wall": {
+    "hour": 10,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 39200
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Anchorage",
+   "offset": "UTC-08:00",
+   "iso": "2026-08-17T12:53:20",
+   "wall": {
+    "hour": 12,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 46400
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Los_Angeles",
+   "offset": "UTC-07:00",
+   "iso": "2026-08-17T13:53:20",
+   "wall": {
+    "hour": 13,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 50000
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Denver",
+   "offset": "UTC-06:00",
+   "iso": "2026-08-17T14:53:20",
+   "wall": {
+    "hour": 14,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 53600
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Chicago",
+   "offset": "UTC-05:00",
+   "iso": "2026-08-17T15:53:20",
+   "wall": {
+    "hour": 15,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 57200
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/New_York",
+   "offset": "UTC-04:00",
+   "iso": "2026-08-17T16:53:20",
+   "wall": {
+    "hour": 16,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 60800
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Toronto",
+   "offset": "UTC-04:00",
+   "iso": "2026-08-17T16:53:20",
+   "wall": {
+    "hour": 16,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 60800
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Sao_Paulo",
+   "offset": "UTC-03:00",
+   "iso": "2026-08-17T17:53:20",
+   "wall": {
+    "hour": 17,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 64400
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "America/Argentina/Buenos_Aires",
+   "offset": "UTC-03:00",
+   "iso": "2026-08-17T17:53:20",
+   "wall": {
+    "hour": 17,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 64400
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Atlantic/Reykjavik",
+   "offset": "UTC+00:00",
+   "iso": "2026-08-17T20:53:20",
+   "wall": {
+    "hour": 20,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 75200
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Europe/London",
+   "offset": "UTC+01:00",
+   "iso": "2026-08-17T21:53:20",
+   "wall": {
+    "hour": 21,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 78800
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Europe/Paris",
+   "offset": "UTC+02:00",
+   "iso": "2026-08-17T22:53:20",
+   "wall": {
+    "hour": 22,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 82400
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Europe/Berlin",
+   "offset": "UTC+02:00",
+   "iso": "2026-08-17T22:53:20",
+   "wall": {
+    "hour": 22,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 82400
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Europe/Athens",
+   "offset": "UTC+03:00",
+   "iso": "2026-08-17T23:53:20",
+   "wall": {
+    "hour": 23,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 86000
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Europe/Moscow",
+   "offset": "UTC+03:00",
+   "iso": "2026-08-17T23:53:20",
+   "wall": {
+    "hour": 23,
+    "minute": 53,
+    "second": 20,
+    "date": "Mon, 2026-08-17",
+    "sod": 86000
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Asia/Dubai",
+   "offset": "UTC+04:00",
+   "iso": "2026-08-18T00:53:20",
+   "wall": {
+    "hour": 0,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 3200
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Asia/Karachi",
+   "offset": "UTC+05:00",
+   "iso": "2026-08-18T01:53:20",
+   "wall": {
+    "hour": 1,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 6800
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Asia/Kolkata",
+   "offset": "UTC+05:30",
+   "iso": "2026-08-18T02:23:20",
+   "wall": {
+    "hour": 2,
+    "minute": 23,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 8600
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Asia/Bangkok",
+   "offset": "UTC+07:00",
+   "iso": "2026-08-18T03:53:20",
+   "wall": {
+    "hour": 3,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 14000
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Asia/Shanghai",
+   "offset": "UTC+08:00",
+   "iso": "2026-08-18T04:53:20",
+   "wall": {
+    "hour": 4,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 17600
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Asia/Tokyo",
+   "offset": "UTC+09:00",
+   "iso": "2026-08-18T05:53:20",
+   "wall": {
+    "hour": 5,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 21200
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Australia/Sydney",
+   "offset": "UTC+10:00",
+   "iso": "2026-08-18T06:53:20",
+   "wall": {
+    "hour": 6,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 24800
+   }
+  },
+  {
+   "epoch": 1787000000,
+   "zone": "Pacific/Auckland",
+   "offset": "UTC+12:00",
+   "iso": "2026-08-18T08:53:20",
+   "wall": {
+    "hour": 8,
+    "minute": 53,
+    "second": 20,
+    "date": "Tue, 2026-08-18",
+    "sod": 32000
+   }
+  }
+ ]
+}

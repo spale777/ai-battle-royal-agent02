@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tzkit — live world clock & timezone converter</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2129;--fg:#e6edf3;--mut:#8b949e;--acc:#58a6ff;--grn:#3fb950;--red:#f85149;--bd:#30363d;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px}
+  a{color:var(--acc)}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--mut);margin-bottom:16px;font-size:13px}
+  .panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+  label{font-size:12px;color:var(--mut);display:block;margin-bottom:6px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input[type=text],select{background:#0d1117;color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;font-size:14px;font-family:inherit;flex:1;min-width:220px}
+  select{flex:0 0 auto;min-width:150px}
+  .btn{background:#21262d;border:1px solid var(--bd);color:var(--fg);border-radius:6px;padding:8px 12px;font-size:13px;cursor:pointer}
+  .btn:hover{background:#30363d}
+  .hint{color:var(--mut);font-size:12px;margin-top:8px}
+  .hint code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+  .master{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .master .utc{font-variant-numeric:tabular-nums;font-size:30px;font-weight:600;letter-spacing:.5px}
+  .master .utc small{font-size:13px;color:var(--mut);font-weight:400;margin-left:4px}
+  .master .local{color:var(--mut);font-size:13px}
+  .err{color:var(--red);background:#2d1517;border:1px solid #7c2a2e;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px;display:none}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;color:var(--mut);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-bottom:1px solid var(--bd)}
+  td{padding:8px 10px;border-bottom:1px solid #21262d;font-variant-numeric:tabular-nums;vertical-align:middle}
+  tr:hover td{background:#161b22}
+  .city{color:var(--fg);font-weight:500}
+  .country{color:var(--mut);font-size:12px}
+  .wall{font-weight:600}
+  .off{color:var(--mut);font-size:13px}
+  .day,.night{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+  .day{background:#e3b341;box-shadow:0 0 8px #e3b341}
+  .night{background:#4b5470}
+  .copy{background:none;border:1px solid var(--bd);color:var(--mut);border-radius:5px;font-size:11px;padding:2px 8px;cursor:pointer}
+  .copy:hover{color:var(--fg);border-color:var(--acc)}
+  .copied{background:#1f6feb;color:#fff !important}
+  .foot{margin-top:20px;color:var(--mut);font-size:12px;text-align:center}
+  .cur{color:var(--grn)}
+  @media(max-width:640px){.master .utc{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>tzkit <span class="cur">●</span></h1>
+  <div class="sub">Live world clock &amp; timezone converter · 19th pure text utility · the instant <em>is</em> the link</div>
+
+  <div class="panel">
+    <label for="zsrc">Interpret a typed local time as if it were in this zone (for "Aug 24 14:00" style input):</label>
+    <select id="zsrc"></select>
+
+    <div style="margin-top:12px">
+      <label for="input">Instant — type "now", an epoch (seconds or ms), or an ISO-8601 / readable datetime:</label>
+      <div class="row">
+        <input type="text" id="input" spellcheck="false" placeholder="now  ·  1785000000  ·  2026-08-24T12:00:00Z  ·  Aug 24 14:00" autocomplete="off">
+        <button class="btn" id="nowbtn">Now</button>
+      </div>
+      <div class="hint">Share link <code id="share">—</code> · <code id="copyLink" class="btn-holder"></code></div>
+    </div>
+  </div>
+
+  <div class="err" id="err"></div>
+
+  <div class="panel">
+    <div class="master">
+      <div class="utc" id="utcbig">—<small>UTC</small></div>
+      <div class="local" id="localnow"></div>
+    </div>
+    <table id="tbl">
+      <thead><tr><th>City</th><th>Local time</th><th>UTC offset</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="foot">tzkit · agent-02 · offsets are live &amp; DST-aware via the Intl timezone database</div>
+</div>
+
+<script>
+"use strict";
+/* --- timezone table --- */
+const ZONES = [
+  ["Pacific/Midway","Midway","US minor outlying islands"],
+  ["Pacific/Honolulu","Honolulu","US"],
+  ["America/Anchorage","Anchorage","US"],
+  ["America/Los_Angeles","Los Angeles","US"],
+  ["America/Denver","Denver","US"],
+  ["America/Chicago","Chicago","US"],
+  ["America/New_York","New York","US"],
+  ["America/Toronto","Toronto","Canada"],
+  ["America/Sao_Paulo","São Paulo","Brazil"],
+  ["America/Argentina/Buenos_Aires","Buenos Aires","Argentina"],
+  ["Atlantic/Reykjavik","Reykjavik","Iceland"],
+  ["Europe/London","London","UK"],
+  ["Europe/Paris","Paris","France"],
+  ["Europe/Berlin","Berlin","Germany"],
+  ["Europe/Athens","Athens","Greece"],
+  ["Europe/Moscow","Moscow","Russia"],
+  ["Asia/Dubai","Dubai","UAE"],
+  ["Asia/Karachi","Karachi","Pakistan"],
+  ["Asia/Kolkata","Kolkata","India"],
+  ["Asia/Bangkok","Bangkok","Thailand"],
+  ["Asia/Shanghai","Shanghai","China"],
+  ["Asia/Tokyo","Tokyo","Japan"],
+  ["Australia/Sydney","Sydney","Australia"],
+  ["Pacific/Auckland","Auckland","New Zealand"]
+];
+
+/* --- helpers --- */
+function b64u(s){ return btoa(unescape(encodeURIComponent(s))).replace(/=+$/,"").replace(/\+/g,"-").replace(/\//g,"_"); }
+function unb64u(s){ s=s.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4)s+="="; return decodeURIComponent(escape(atob(s))); }
+
+function pad2(n){ return String(Math.abs(n)).padStart(2,"0"); }
+
+/* OPT_FMT: use hourCycle:"h23" and NOT hour12:false — hour12:false FORCES "24"
+   for midnight with 2-digit hour. Also must inject timeZone per call or the
+   formatter ignores it (returns default-tz). Both are real bugs the
+   ground-truth suite caught. */
+const OFMT = {year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"};
+function parts(date, zone, o){
+  const p = new Intl.DateTimeFormat("en-US", Object.assign({timeZone:zone}, o||OFMT)).formatToParts(date);
+  const g={}; p.forEach(x=>g[x.type]=x.value);
+  return g;
+}
+
+/* wall-clock-as-UTC ms for a zone at a date */
+function wallAsUTC(date, zone){
+  const g = parts(date, zone);
+  return Date.UTC(+g.year, +g.month-1, +g.day, +g.hour, +g.minute, +g.second);
+}
+
+/* offset from a zone for a given date: returns "UTC+02:00" (arithmetic, so
+   a zero-offset zone yields UTC+00:00 rather than a bare "GMT"). */
+function offsetStr(date, zone){
+  try{
+    const ms = wallAsUTC(date, zone) - Math.floor(date.getTime()/1000)*1000;
+    const total = Math.round(ms/60000);
+    const sign = total<0 ? "-" : "+";
+    const a = Math.abs(total);
+    return "UTC"+sign+pad2(Math.floor(a/60))+":"+pad2(a%60);
+  }catch(e){ return "—"; }
+}
+
+/* wall-clock pieces for a zone */
+function wallParts(date, zone){
+  const g = parts(date, zone); // hour/minute/second/year/month/day
+  const w = new Intl.DateTimeFormat("en-US",{timeZone:zone,weekday:"short"}).formatToParts(date).find(x=>x.type==="weekday");
+  g.weekday = w ? w.value : "";
+  return g;
+}
+function secondsOfDay(date, zone){
+  const g = parts(date, zone);
+  return (+g.hour)*3600 + (+g.minute)*60 + (+g.second);
+}
+function isoLocal(date, zone){
+  const g = parts(date, zone);
+  return g.year+"-"+g.month+"-"+g.day+"T"+pad2(+g.hour)+":"+g.minute+":"+g.second;
+}
+
+/* --- parse user input into a Date (absolute instant) --- */
+/* returns {d:Date} or {err:string}. Uses zoneSel for wall-clock-only input. */
+function parseInstant(raw, srcZone){
+  raw = (raw||"").trim();
+  if(!raw || /^now$/i.test(raw)) return {d:new Date(), now:true};
+  if(/^\d{1,15}$/.test(raw)){
+    let n = +raw;
+    if(n < 1e12) n *= 1000;      // treat < 1e12 as seconds
+    const d = new Date(n);
+    if(isNaN(d.getTime())) return {err:"Unparseable epoch value."};
+    return {d};
+  }
+  // ISO / readable containing T, Z, or +hh:mm / -hh:mm
+  if(/[TZ]|([+-]\d{2}:?\d{2})$/.test(raw)){
+    const d = new Date(raw);
+    if(!isNaN(d.getTime())) return {d};
+  }
+  // bare date-time -> interpret in srcZone wall time
+  if(/^\d{4}-\d{1,2}-\d{1,2}([ T]\d{1,2}(:\d{2})?(:\d{2})?)?$/.test(raw)){
+    let m = raw.split(/[-:\s]+/).map(Number);
+    if(m.length>=1){
+      const y=m[0],mo=(m[1]||1),da=(m[2]||1),h=(m[3]||0),mi=(m[4]||0),s=(m[5]||0);
+      // epoch of that wall time in UTC, using the zone offset at that date
+      const naiveUTC = Date.UTC(y, mo-1, da, h, mi, s);
+      const zone = srcZone || "Etc/UTC";
+      const off = rawOffsetMs(zone, new Date(naiveUTC));
+      const d = new Date(naiveUTC - off);
+      if(!isNaN(d.getTime())) return {d};
+      return {err:"Unparseable date/time."};
+    }
+  }
+  // named month form "Aug 24 14:00" -> try Date.parse
+  const d2 = new Date(""+raw);
+  if(!isNaN(d2.getTime())) return {d2};
+  return {err:"Couldn't read that as a time. Try “now”, an epoch, 2026-08-24T12:00:00Z, or a wall time like 2026-08-24 14:00."};
+}
+
+/* milliseconds offset of a zone from UTC at a given date (returns ms west-positive => add to utc to get local) */
+function rawOffsetMs(zone, date){
+  // local wall - UTC
+  const parts = new Intl.DateTimeFormat("en-US",{timeZone:zone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(date);
+  const g={}; parts.forEach(x=>g[x.type]=x.value);
+  const localAsUTC = Date.UTC(+g.year, +g.month-1, +g.day, +g.hour, +g.minute, +g.second);
+  return localAsUTC - Math.floor(date.getTime()/1000)*1000;
+}
+
+/* --- state --- */
+const state = { mode:"now", epoch:Date.now() };
+
+/* --- rendering --- */
+let srcZoneSel, inputEl, errEl, tbodyEl, utcBig, localNow, shareEl;
+
+function fmtUTC(d){
+  return d.toISOString().replace("T"," ").replace(/\.\d+Z$/,"Z");
+}
+function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function render(){
+  const d = state.mode==="now" ? new Date() : new Date(state.epoch);
+  const utcIso = d.toISOString();
+  utcBig.innerHTML = esc(fmtUTC(d)) + "<small>UTC · universal</small>";
+  if(state.mode==="now"){
+    localNow.textContent = "Your local: " + d.toLocaleString();
+  } else {
+    localNow.textContent = "Fixed instant (not ticking). Click Now to resume.";
+  }
+  const rows = [];
+  for(const [zone, city, country] of ZONES){
+    const op = offsetStr(d, zone);
+    const wp = wallParts(d, zone);
+    const sod = secondsOfDay(d, zone);
+    const isDay = sod >= 6*3600 && sod < 18*3600;
+    const wall = pad2(+wp.hour)+":"+wp.minute+":"+wp.second;
+    const date = wp.weekday+", "+wp.year+"-"+wp.month+"-"+wp.day;
+    const copyVal = isoLocal(d, zone)+" ["+zone+"]";
+    rows.push(`<tr>
+      <td><span class="city">${esc(city)}</span><br><span class="country">${esc(country)} · ${esc(zone)}</span></td>
+      <td><span class="${isDay?'day':'night'}"></span><span class="wall">${wall}</span> <span class="off">${date}</span></td>
+      <td class="off">${esc(op)}</td>
+      <td><button class="copy" data-c="${esc(copyVal)}">copy</button></td>
+    </tr>`);
+  }
+  tbodyEl.innerHTML = rows.join("");
+}
+
+/* --- wiring --- */
+function updateHash(){
+  const val = state.mode==="now" ? "now" : String(state.epoch);
+  const h = "#t=" + b64u(val + "|" + (srcZoneSel.value||"Etc/UTC"));
+  history.replaceState(null,"",h);
+  shareEl.textContent = h;
+}
+function tryLoad(){
+  const h = window.location.hash;
+  if(h.substring(0,3)==="#t="){
+    const dec = unb64u(h.slice(3));
+    const bar = dec.indexOf("|");
+    let val = dec, zone = "Etc/UTC";
+    if(bar>=0){ val = dec.slice(0,bar); zone = dec.slice(bar+1); }
+    if(zone && zoneOptions.indexOf(zone)>=0) srcZoneSel.value = zone;
+    const r = parseInstant(val, srcZoneSel.value);
+    if(!r.err && !r.now){ state.mode="fixed"; state.epoch = r.d.getTime(); }
+    else if(r.now){ state.mode="now"; }
+    else { state.mode="now"; }
+    inputEl.value = val;
+    updateHash();
+  } else {
+    state.mode="now";
+  }
+  applyErr(null);
+  render();
+}
+function applyErr(msg){
+  errEl.style.display = msg ? "block" : "none";
+  errEl.textContent = msg || "";
+}
+function onInput(){
+  const raw = inputEl.value;
+  const r = parseInstant(raw, srcZoneSel.value);
+  if(r.err){ applyErr(r.err); return; }
+  applyErr(null);
+  if(r.now){ state.mode="now"; }
+  else { state.mode="fixed"; state.epoch = r.d.getTime(); }
+  render();
+  updateHash();
+}
+
+/* build source-zone list */
+let zoneOptions;
+function buildSrc(){
+  const all = ["Etc/UTC"].concat(ZONES.map(z=>z[0]));
+  zoneOptions = all;
+  srcZoneSel.innerHTML = all.map(z=>`<option value="${esc(z)}">${esc(z)}</option>`).join("");
+}
+
+/* clipboard */
+document.addEventListener("click", function(e){
+  const btn = e.target.closest(".copy");
+  if(!btn) return;
+  const v = btn.getAttribute("data-c");
+  try{ navigator.clipboard.writeText(v); }catch(_){}
+  btn.textContent="copied"; btn.classList.add("copied");
+  setTimeout(()=>{ btn.textContent="copy"; btn.classList.remove("copied"); }, 900);
+});
+document.addEventListener("click", function(e){
+  if(e.target.id==="copyLink"){ navigator.clipboard.writeText(shareEl.textContent); }
+});
+
+document.addEventListener("DOMContentLoaded", function(){
+  inputEl = document.getElementById("input");
+  errEl = document.getElementById("err");
+  tbodyEl = document.getElementById("tbody");
+  utcBig = document.getElementById("utcbig");
+  localNow = document.getElementById("localnow");
+  shareEl = document.getElementById("share");
+  srcZoneSel = document.getElementById("zsrc");
+
+  buildSrc();
+  tryLoad();
+
+  inputEl.addEventListener("input", onInput);
+  document.getElementById("nowbtn").addEventListener("click", function(){
+    state.mode="now"; inputEl.value="now"; applyErr(null); render(); updateHash();
+    inputEl.focus();
+  });
+  srcZoneSel.addEventListener("change", function(){ if(inputEl.value.trim() && inputEl.value.trim()!=="now") onInput(); });
+
+  /* live tick in "now" mode */
+  setInterval(function(){ if(state.mode==="now") render(); }, 1000);
+
+  window.addEventListener("hashchange", function(){ tryLoad(); });
+
+  /* share-link copy button */
+  const cs = document.createElement("button");
+  cs.className="btn"; cs.id="copyLink"; cs.style.marginLeft="6px"; cs.textContent="copy link";
+  document.getElementById("copyLink") || (shareEl.parentNode.appendChild(cs));
+});
+</script>
+</body>
+</html>
