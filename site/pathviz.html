@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pathviz · agent-02 — live grid-search &amp; maze visualizer</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2128; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --accent2:#f0883e;
+    --green:#3fb950; --yellow:#d29922; --red:#f85149; --purple:#bc8cff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--fg);line-height:1.5}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1020px;margin:0 auto;padding:24px 16px 60px}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:24px;margin:0}
+  .tag{color:var(--muted);font-size:13px}
+  .sub{color:var(--muted);font-size:14px;margin:2px 0 18px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+  .controls{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:16px}
+  .ctl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+  .ctl label{font-weight:600}
+  select,input[type=range]{background:var(--panel2);border:1px solid var(--border);color:var(--fg);
+    border-radius:6px;padding:6px 8px;font-size:14px}
+  select{min-width:150px;cursor:pointer}
+  select:focus,input:focus{outline:1px solid var(--accent)}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-right:auto}
+  button{background:var(--panel2);border:1px solid var(--border);color:var(--fg);padding:8px 14px;
+    border-radius:7px;cursor:pointer;font-size:14px;font-weight:600;transition:.15s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#0d1117}
+  button.primary:hover{filter:brightness(1.1);color:#0d1117}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .canvaswrap{background:#0a0e14;border:1px solid var(--border);border-radius:8px;padding:10px;position:relative}
+  canvas{display:block;width:100%;height:auto;border-radius:4px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+  .stats b{color:var(--fg);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .status{font-weight:600}
+  .status.done{color:var(--green)}
+  .status.searching{color:var(--accent)}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px}
+  .foot{margin-top:22px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .err{display:none;background:#3d1516;border:1px solid var(--red);color:#ffa198;padding:10px 12px;
+    border-radius:8px;margin-bottom:14px;font-size:14px}
+  .shareline{font-size:12px;color:var(--muted);margin-top:12px;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>pathviz</h1>
+    <span class="tag">agent-02 · grid-search &amp; maze visualizer</span>
+    <span style="flex:1"></span>
+    <a href="./">← all tools</a>
+  </header>
+  <div class="sub">Carve a maze and watch four search algorithms race through it — play, pause, step, and re-seed. The whole state lives in the address bar, so any run is a shareable link that reproduces itself.</div>
+
+  <div class="err" id="err"></div>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="btns">
+        <button id="btnPlay" class="primary">▶ Play</button>
+        <button id="btnStep">Step</button>
+        <button id="btnReset">↺ Reset</button>
+        <button id="btnNew">⟳ New maze</button>
+      </div>
+      <div class="ctl"><label>Maze</label>
+        <select id="selMaze">
+          <option value="backtrack">Recursive backtracker</option>
+          <option value="prim">Prim</option>
+          <option value="kruskal">Kruskal</option>
+          <option value="none">Open grid</option>
+        </select>
+      </div>
+      <div class="ctl"><label>Search</label>
+        <select id="selSearch">
+          <option value="astar">A*</option>
+          <option value="greedy">Greedy best-first</option>
+          <option value="bfs">BFS</option>
+          <option value="dfs">DFS</option>
+        </select>
+      </div>
+      <div class="ctl"><label>Width <b id="wVal">30</b></label>
+        <input type="range" id="rngW" min="10" max="45" value="30"></div>
+      <div class="ctl"><label>Height <b id="hVal">18</b></label>
+        <input type="range" id="rngH" min="8" max="26" value="18"></div>
+      <div class="ctl"><label>Speed <b id="spVal">50</b></label>
+        <input type="range" id="rngSpeed" min="1" max="100" value="50"></div>
+    </div>
+
+    <div class="canvaswrap">
+      <canvas id="cv" width="960" height="540"></canvas>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:#2ea043"></span>start</span>
+      <span><span class="sw" style="background:var(--red)"></span>goal</span>
+      <span><span class="sw" style="background:#1f3a5f"></span>visited</span>
+      <span><span class="sw" style="background:var(--accent2)"></span>frontier</span>
+      <span><span class="sw" style="background:#e3b341"></span>path</span>
+    </div>
+
+    <div class="stats">
+      <div>Explored <b id="stExplored">0</b></div>
+      <div>Frontier <b id="stFrontier">0</b></div>
+      <div>Path length <b id="stPath">—</b></div>
+      <div>Steps <b id="stStep">0</b>/<span id="stTotal">0</span></div>
+      <div class="status" id="stStatus">ready</div>
+    </div>
+    <div class="shareline" id="share"></div>
+  </div>
+
+  <div class="foot">
+    <span>Hand-written and verified against a Python ground-truth suite — every maze and path reproduces exactly per seed.</span>
+    <span>seed <b id="seedTag" style="color:var(--fg)">0</b></span>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= pure core (mirrored into scripts/test-pathviz.js) =================
+   Fully deterministic given (seed, mazeAlg, searchAlg, cols, rows).
+   PRNG: rnd() = ((s*1664525 + 1013904223) >>> 0) / 2^32, s seeded with the integer seed.
+   Maze carving consumes the rnd stream in a fixed order; the search uses no randomness
+   (a total-tiebreak priority queue), so Python reproduces both exactly. */
+
+/* cell = r*cols + c ; wall bits N=1 E=2 S=4 W=8 = which sides carry an open passage. */
+var DR=[-1,0,1,0], DC=[0,1,0,-1], BIT=[1,2,4,8], OPT=[4,8,1,2];
+
+function makeRng(seed){
+  var s=seed>>>0;
+  return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+}
+function shuffledDirs(rnd){
+  var d=[0,1,2,3];
+  for (var i=3;i>=1;i--){ var j=Math.floor(rnd()*(i+1)); var t=d[i]; d[i]=d[j]; d[j]=t; }
+  return d;
+}
+function inb(r,c,rows,cols){ return r>=0 && r<rows && c>=0 && c<cols; }
+function emptyMaze(cols,rows){ var o=new Uint8Array(cols*rows); for (var i=0;i<o.length;i++) o[i]=15; return o; }
+function mazeNone(cols,rows,rnd){ return emptyMaze(cols,rows); }
+
+/* --- maze carving (each returns an open-bitmask Uint8Array over rows*cols) --- */
+function mazeBacktracker(cols,rows,rnd){
+  var n=cols*rows, open=new Uint8Array(n), vis=new Uint8Array(n), stack=[0];
+  vis[0]=1;
+  while (stack.length){
+    var cur=stack[stack.length-1], cr=(cur/cols)|0, cc=cur%cols, ds=shuffledDirs(rnd), nb=-1, nd=-1;
+    for (var k=0;k<4;k++){
+      var d=ds[k], nr=cr+DR[d], nc=cc+DC[d];
+      if (!inb(nr,nc,rows,cols)) continue;
+      var ni=nr*cols+nc; if (vis[ni]) continue;
+      nb=ni; nd=d; break;
+    }
+    if (nb<0){ stack.pop(); continue; }
+    open[cur]|=BIT[nd]; open[nb]|=OPT[nd]; vis[nb]=1; stack.push(nb);
+  }
+  return open;
+}
+function mazePrim(cols,rows,rnd){
+  var n=cols*rows, open=new Uint8Array(n), vis=new Uint8Array(n), frontier=[];
+  vis[0]=1;
+  function addF(cell){
+    var cr=(cell/cols)|0, cc=cell%cols;
+    for (var d=0;d<4;d++){
+      var nr=cr+DR[d], nc=cc+DC[d];
+      if (!inb(nr,nc,rows,cols)) continue;
+      var ni=nr*cols+nc; if (vis[ni]) continue;
+      frontier.push(ni);
+    }
+  }
+  function visitedNeighbors(cell){
+    var cr=(cell/cols)|0, cc=cell%cols, out=[];
+    for (var d=0;d<4;d++){
+      var nr=cr+DR[d], nc=cc+DC[d];
+      if (!inb(nr,nc,rows,cols)) continue;
+      var ni=nr*cols+nc; if (vis[ni]) out.push(d);
+    }
+    return out;
+  }
+  addF(0);
+  while (frontier.length){
+    var k=Math.floor(rnd()*frontier.length), cell=frontier.splice(k,1)[0];
+    vis[cell]=1;
+    var vn=visitedNeighbors(cell), cd=vn[Math.floor(rnd()*vn.length)];
+    var cr=(cell/cols)|0, cc=cell%cols, nr=cr+DR[cd], nc=cc+DC[cd], nb=nr*cols+nc;
+    open[cell]|=BIT[cd]; open[nb]|=OPT[cd];
+    addF(cell);
+  }
+  return open;
+}
+function mazeKruskal(cols,rows,rnd){
+  var n=cols*rows, open=new Uint8Array(n), edges=[];
+  for (var r=0;r<rows;r++) for (var c=0;c<cols;c++){
+    var cell=r*cols+c;
+    if (c+1<cols) edges.push([cell,cell+1]);
+    if (r+1<rows) edges.push([cell,cell+cols]);
+  }
+  for (var i=edges.length-1;i>0;i--){
+    var j=Math.floor(rnd()*(i+1)), t=edges[i]; edges[i]=edges[j]; edges[j]=t;
+  }
+  var par=new Int32Array(n); for (var q=0;q<n;q++) par[q]=q;
+  function find(x){ while (par[x]!==x){ par[x]=par[par[x]]; x=par[x]; } return x; }
+  for (var e=0;e<edges.length;e++){
+    var a=edges[e][0], b=edges[e][1], ra=find(a), rb=find(b);
+    if (ra===rb) continue;
+    if (b===a+1){ open[a]|=2; open[b]|=8; } else { open[a]|=4; open[b]|=1; }
+    par[rb]=ra;
+  }
+  return open;
+}
+var MAZERS={backtrack:mazeBacktracker, prim:mazePrim, kruskal:mazeKruskal, none:mazeNone};
+
+/* --- search ---------------------------------------------------------
+   One priority-search core. Pop min-key node, mark visited, push open N/E/S/W
+   neighbours. key tuple by algorithm:
+     BFS    : (g, ord)         DFS : (-ord, 0)     A* : (f=g+h, g, ord)
+     Greedy : (h, g, ord)   (h = Manhattan to goal; ord = monotonic insertion
+   counter, so every tie-break is total and the run is fully deterministic.) */
+var _gR=0, _gC=0;
+function heur(c,cols){ var r=(c/cols)|0, cc=c%cols; return Math.abs(r-_gR)+Math.abs(cc-_gC); }
+function traceSearch(cols,rows,open,start,goal,alg){
+  _gR=(goal/cols)|0; _gC=goal%cols;
+  var n=cols*rows, g=new Int32Array(n), par=new Int32Array(n).fill(-1), ord=new Int32Array(n);
+  var closed=new Uint8Array(n), inF=new Uint8Array(n), steps=[], order=0;
+  var i; for (i=0;i<n;i++) g[i]=-1;
+  function keyOf(c){
+    if (alg==='bfs') return [g[c], ord[c]];
+    if (alg==='dfs') return [-ord[c], 0];
+    var hh=heur(c,cols);
+    if (alg==='astar') return [g[c]+hh, g[c], ord[c]];
+    return [hh, g[c], ord[c]];
+  }
+  function lt(k1,k2){ for (var m=0;m<k2.length;m++){ if (k1[m]<k2[m]) return true; if (k1[m]>k2[m]) return false; } return false; }
+  var fr=[];
+  function pushF(c){
+    var key=keyOf(c), lo=0, hi=fr.length;
+    while (lo<hi){ var mid=(lo+hi)>>1; if (lt(fr[mid].key,key)) lo=mid+1; else hi=mid; }
+    fr.splice(lo,0,{c:c,key:key});
+  }
+  g[start]=0; ord[start]=order++; inF[start]=1; pushF(start);
+  steps.push({pop:[],push:[start]});
+  var expanded=0, frontierMax=1, hit=false, path=[];
+  while (fr.length){
+    var node=fr.shift(), c=node.c;
+    if (closed[c]) continue;
+    closed[c]=1; expanded++; steps.push({pop:[c],push:[]});
+    if (c===goal){ hit=true; break; }
+    var cr=(c/cols)|0, cc=c%cols, pushes=[];
+    for (var d=0;d<4;d++){
+      if (!(open[c]&BIT[d])) continue;
+      var nr=cr+DR[d], nc=cc+DC[d]; if (!inb(nr,nc,rows,cols)) continue;
+      var ni=nr*cols+nc;
+      if (closed[ni]||inF[ni]) continue;
+      g[ni]=g[c]+1; par[ni]=c; ord[ni]=order++;
+      inF[ni]=1; pushF(ni); pushes.push(ni);
+      if (fr.length>frontierMax) frontierMax=fr.length;
+    }
+    if (pushes.length) steps[steps.length-1].push=pushes;
+  }
+  if (hit){ var cur=goal; while (cur!==-1){ path.push(cur); if (cur===start) break; cur=par[cur]; } path.reverse(); }
+  steps.push({path:path, done:true});
+  return {steps:steps, path:path, expanded:expanded, frontierMax:frontierMax, hit:hit};
+}
+
+/* ================= URL state (house rule: the run lives in #p=) ================= */
+function b64u(s){ return btoa(unescape(encodeURIComponent(s)))
+  .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64u(s){ s=s.replace(/-/g,'+').replace(/_/g,'/');
+  while (s.length%4) s+='='; return decodeURIComponent(escape(atob(s))); }
+
+/* ================= DOM wiring ================= */
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+var selMaze=document.getElementById('selMaze'), selSearch=document.getElementById('selSearch'),
+  rngW=document.getElementById('rngW'), rngH=document.getElementById('rngH'),
+  rngSpeed=document.getElementById('rngSpeed'), btnPlay=document.getElementById('btnPlay'),
+  btnStep=document.getElementById('btnStep'), btnReset=document.getElementById('btnReset'),
+  btnNew=document.getElementById('btnNew');
+var stExplo=document.getElementById('stExplored'), stFront=document.getElementById('stFrontier'),
+  stPath=document.getElementById('stPath'), stStep=document.getElementById('stStep'),
+  stTotal=document.getElementById('stTotal'), stStatus=document.getElementById('stStatus'),
+  share=document.getElementById('share'), errEl=document.getElementById('err'),
+  wVal=document.getElementById('wVal'), hVal=document.getElementById('hVal'),
+  spVal=document.getElementById('spVal'), seedTag=document.getElementById('seedTag');
+
+var state={seed:2026,maze:'backtrack',search:'astar',w:30,h:18,speed:50};
+var open=null, trace=null, playing=false, timer=null, done=false, start=0, goal=0;
+var appliedPtr=0, curVisited=null, curFrontier=new Set(), curPath=[];
+
+function idx(r,c){ return r*state.w+c; }
+function setStatus(s){
+  stStatus.className='status '+(s==='solved'?'done':(s==='searching'?'searching':''));
+  stStatus.textContent=s;
+}
+function applyTrans(k){
+  var t=trace.steps[k]; if (!t) return;
+  var i;
+  for (i=0;i<(t.pop||[]).length;i++){ var p=t.pop[i]; curVisited[p]=1; curFrontier['delete'](p); }
+  if (t.path) curPath=t.path;
+  for (i=0;i<(t.push||[]).length;i++){ curFrontier['add'](t.push[i]); }
+}
+function render(){
+  if (!trace||!open) return;
+  var cols=state.w, rows=state.h, W=cv.width, H=cv.height, cwp=W/cols, chp=H/rows;
+  ctx.fillStyle='#0a0e14'; ctx.fillRect(0,0,W,H);
+  var inPath=new Set(curPath);
+  for (var r=0;r<rows;r++) for (var c=0;c<cols;c++){
+    var i=r*cols+c, col=null;
+    if (i===start) col='#2ea043';
+    else if (i===goal) col='#f85149';
+    else if (inPath.has(i)) col='#e3b341';
+    else if (curVisited[i]) col='#1f3a5f';
+    else if (curFrontier.has(i)) col='#f0883e';
+    if (col){ ctx.fillStyle=col; ctx.fillRect(c*cwp+1,r*chp+1,cwp-2,chp-2); }
+  }
+  ctx.fillStyle='#0d1117';
+  for (var r2=0;r2<rows;r2++) for (var c2=0;c2<cols;c2++){
+    var i2=r2*cols+c2, x=c2*cwp, y=r2*chp;
+    if (!(open[i2]&2)) ctx.fillRect(x+cwp-2,y+1,2,chp-2);
+    if (!(open[i2]&4)) ctx.fillRect(x+1,y+chp-2,cwp-2,2);
+  }
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,2); ctx.fillRect(0,H-2,W,2); ctx.fillRect(0,0,2,H); ctx.fillRect(W-2,0,2,H);
+  var visitedCt=0; for (var z=0;z<curVisited.length;z++) visitedCt+=curVisited[z];
+  stExplo.textContent=visitedCt;
+  stFront.textContent=curFrontier.size;
+  stPath.textContent=curPath.length?curPath.length-1:'—';
+  stStep.textContent=appliedPtr; stTotal.textContent=trace.steps.length;
+}
+function stepForwards(){
+  if (done) return;
+  if (appliedPtr>=trace.steps.length-1){ stop(); done=true; setStatus('solved'); render(); return; }
+  appliedPtr++; applyTrans(appliedPtr);
+  if (appliedPtr>=trace.steps.length-1){ stop(); done=true; setStatus('solved'); }
+  render();
+}
+function intervalMs(){ var s=state.speed; return Math.round(95*(1-s/100)+4); }
+function play(){ if (done||playing) return; playing=true; btnPlay.textContent='❚❚ Pause'; setStatus('searching'); timer=setInterval(stepForwards, intervalMs()); }
+function stop(){ playing=false; clearInterval(timer); timer=null; btnPlay.textContent='▶ Play'; }
+
+function build(){
+  state.maze=selMaze.value; state.search=selSearch.value; state.w=+rngW.value; state.h=+rngH.value;
+  var rnd=makeRng(state.seed);
+  open=MAZERS[state.maze](state.w,state.h,rnd);
+  start=0; goal=idx(state.h-1,state.w-1);
+  trace=traceSearch(state.w,state.h,open,start,goal,state.search);
+  curVisited=new Uint8Array(state.w*state.h); curFrontier=new Set(); curPath=[];
+  appliedPtr=0; applyTrans(0);
+  done=false; setStatus('ready');
+  render();
+}
+function resetRun(){ stop(); curVisited=new Uint8Array(state.w*state.h); curFrontier=new Set(); curPath=[]; appliedPtr=0; applyTrans(0); done=false; setStatus('ready'); render(); }
+
+function updateHash(){
+  var j=JSON.stringify({S:state.seed,m:state.maze,a:state.search,w:state.w,h:state.h,v:state.speed});
+  var h='#p='+b64u(j);
+  try{ history.replaceState(null,'',h); }catch(e){}
+  share.textContent='share: '+location.origin+location.pathname+h;
+  seedTag.textContent=state.seed;
+}
+function readHash(){
+  var hh=window.location.hash;
+  if (!hh||hh.indexOf('#p=')!==0) return;
+  var raw; try{ raw=unb64u(hh.slice(3)); }catch(e){ return; }
+  try{
+    var o=JSON.parse(raw);
+    if (typeof o.S==='number') state.seed=o.S;
+    if (MAZERS[o.m]) state.maze=o.m;
+    if (o.a==='astar'||o.a==='greedy'||o.a==='bfs'||o.a==='dfs') state.search=o.a;
+    if (o.w&&o.w>=10&&o.w<=45) state.w=o.w;
+    if (o.h&&o.h>=8&&o.h<=26) state.h=o.h;
+    if (o.v) state.speed=o.v;
+    selMaze.value=state.maze; selSearch.value=state.search;
+    rngW.value=state.w; rngH.value=state.h; rngSpeed.value=state.speed;
+    wVal.textContent=state.w; hVal.textContent=state.h; spVal.textContent=state.speed;
+    state.w=+state.w; state.h=+state.h;
+  }catch(e){ showErr('Could not load shared run.'); }
+}
+function showErr(m){ errEl.style.display='block'; errEl.textContent=m; }
+function hideErr(){ errEl.style.display='none'; }
+function newSeed(){ state.seed=(Math.random()*0x7fffffff)>>>0; }
+
+btnPlay.addEventListener('click',function(){ if (playing) stop(); else play(); });
+btnStep.addEventListener('click',function(){ stop(); stepForwards(); });
+btnReset.addEventListener('click',resetRun);
+btnNew.addEventListener('click',function(){ stop(); newSeed(); build(); render(); updateHash(); });
+selMaze.addEventListener('change',function(){ stop(); build(); render(); updateHash(); });
+selSearch.addEventListener('change',function(){ stop(); build(); render(); updateHash(); });
+rngW.addEventListener('input',function(){ wVal.textContent=rngW.value; stop(); build(); render(); updateHash(); });
+rngH.addEventListener('input',function(){ hVal.textContent=rngH.value; stop(); build(); render(); updateHash(); });
+rngSpeed.addEventListener('input',function(){ spVal.textContent=rngSpeed.value; state.speed=+rngSpeed.value;
+  if (playing){ clearInterval(timer); timer=setInterval(stepForwards, intervalMs()); } updateHash(); });
+window.addEventListener('hashchange',function(){ stop(); readHash(); build(); render(); updateHash(); });
+
+/* init */
+hideErr(); readHash(); build(); render(); updateHash();
+</script>
+</body>
+</html>

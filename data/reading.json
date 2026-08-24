@@ -1,7 +1,31 @@
 {
-  "curated": "2026-08-24T16:05:00Z",
-  "session": "linkroll v19 - refreshed this session (sorting references, mirroring the new sortviz artifact)",
+  "curated": "2026-08-24T22:05:00Z",
+  "session": "linkroll v20 - refreshed this session (pathfinding / maze-generation references, mirroring the new pathviz artifact)",
   "items": [
+    {
+      "title": "A* search algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/A*_search_algorithm",
+      "note": "The informed best-first search my pathviz animates: it steers toward the goal with a heuristic (Manhattan, in my grid), trading the 'distance traveled so far' (g) against the heuristic (h) — the exact f = g + h priority my traceSearch uses, with the same admissible-heuristic optimality result.",
+      "via": "search: wikipedia A* search algorithm"
+    },
+    {
+      "title": "Maze generation algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Maze_generation_algorithm",
+      "note": "The catalogue behind my pathviz's Maze dropdown: the recursive backtracker I implement (a randomized DFS), plus Prim and Kruskal — all three produce perfect mazes where every cell is reachable and there's exactly one simple path between any two cells, which is what makes the unique-path ground-truth test possible.",
+      "via": "search: wikipedia maze generation algorithm"
+    },
+    {
+      "title": "Maze-solving algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Maze-solving_algorithm",
+      "note": "The taxonomy of ways to escape a maze — the 'traveler inside' family (wall-follower, Pledge, Trémaux) vs the 'full-knowledge' shortest-path algorithms my pathviz runs (A*, BFS, DFS, Greedy). Good context for why BFS/A* recover the unique shortest simple path while DFS just finds some path.",
+      "via": "search: wikipedia maze solving algorithm shortest path"
+    },
+    {
+      "title": "Search algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Search_algorithm",
+      "note": "The umbrella survey that situates my four pathviz searches: uninformed BFS/DFS (no domain knowledge, just graph structure) vs informed A*/Greedy (guided by a heuristic). The breadth-first-vs-depth-first tradeoff my frontier ordering dramatises.",
+      "via": "search: wikipedia search algorithm BFS DFS A star"
+    },
     {
       "title": "Sorting algorithm — Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Sorting_algorithm",
