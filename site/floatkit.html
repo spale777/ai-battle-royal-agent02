@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>floatkit · agent-02</title>
+<meta name="description" content="Analyze IEEE-754 binary64 doubles. Type any number to see its exact 64-bit pattern (sign / exponent / significand), or type a hex or binary bit pattern to see the double it decodes to. Classifies normal, subnormal, zero, infinity, and NaN. Shareable as a URL.">
+<style>
+  :root{--bg:#0d1117;--bg2:#161b22;--panel:#1c232d;--ink:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent2:#3fb950;--line:#30363d;--warn:#f0883e;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 70% -10%,#022835 0%,transparent 60%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.6;min-height:100vh;}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 24px 80px}
+  h1{font-size:22px;letter-spacing:.5px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .muted{color:var(--muted);font-size:14px}
+  label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px}
+  textarea{width:100%;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:14px;padding:12px;box-sizing:border-box;resize:vertical;min-height:58px;line-height:1.5;}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+  button{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:ui-monospace,monospace;transition:.15s;}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0d1117;font-weight:600;border:none}
+  select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;font-family:ui-monospace,monospace}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px}
+  .out{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .out .ot{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  .out .ov{font-family:ui-monospace,monospace;font-size:14px;color:var(--ink);word-break:break-all;margin:0 0 6px}
+  .out .ovbig{font-family:ui-monospace,monospace;font-size:18px;color:var(--ink);word-break:break-all;margin:0 0 6px}
+  .out .c{display:flex;justify-content:flex-end}
+  .out .c button{font-size:11px;padding:3px 9px}
+  .wide{grid-column:1 / -1}
+  .err{border:1px solid var(--warn);background:var(--panel);border-radius:10px;padding:10px 14px;color:var(--ink);font-size:14px;margin-bottom:12px}
+  .banner{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin-bottom:14px}
+  .cls{display:inline-block;border-radius:5px;padding:2px 10px;font-size:12px;font-weight:700;letter-spacing:.3px}
+  .cls.n{background:#1f6feb;color:#fff}.cls.z{background:#8957e5;color:#fff}.cls.s{background:#f0883e;color:#0d1117}
+  .cls.i{background:#f85149;color:#fff}.cls.x{background:#d29922;color:#0d1117}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#0d1117;padding:8px 18px;border-radius:20px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  code{background:var(--bg2);border:1px solid var(--line);padding:1px 5px;border-radius:5px;font-size:12px}
+  .bitline{font-family:ui-monospace,monospace;font-size:14px;word-break:break-all;line-height:2;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>floatkit <span class="muted">&middot; an IEEE-754 binary64 analyzer</span></h1>
+  <p class="muted" style="margin-top:6px">
+    Type a number (e.g. <code>0.1</code>, <code>1e308</code>) and it shows that double's <strong>exact
+    64-bit IEEE-754 pattern</strong> — sign, biased/unbiased exponent, 53-bit significand, and ULP. Or type a
+    pattern — <code>0x4009…</code>, 16 bare hex digits, 64 binary bits, or 8 byte pairs — and it decodes to
+    the double it represents. It classifies each value as normal / subnormal / zero / infinity / NaN. House
+    rule holds: the value is encoded in the address bar (<code>#f=…</code>), so anything here is a shareable
+    URL that reproduces itself. All math is hand-written and verified against Python's
+    <code>struct</code>/<code>math</code> (the IEEE-754 ground truth). Runs entirely in your browser.
+  </p>
+
+  <label for="in">a number, or a bit pattern (hex / binary / bytes)</label>
+  <textarea id="in" spellcheck="false" placeholder="e.g.  0.1&#10;or  0x3FB999999999999A&#10;or  3F B9 99 99 99 99 99 9A">0.1</textarea>
+  <div class="controls">
+    <button id="cl" title="paste a value from the clipboard">from clipboard</button>
+    <button id="link" title="save/share this exact value as a URL">copy share link</button>
+    <span class="muted" id="memo" style="flex:1"></span>
+    <select id="examples">
+      <option value="0.1">0.1</option>
+      <option value="0.2">0.2</option>
+      <option value="0.3">0.3</option>
+      <option value="1/10">1/10</option>
+      <option value="2**-53">2**-53 (half ULP)</option>
+      <option value="9007199254740993">2^53+1 (odd)</option>
+      <option value="1e308">1e308</option>
+      <option value="5e-324">5e-324 (min subnormal)</option>
+      <option value="1.7976931348623157e308">DBL_MAX</option>
+      <option value="Infinity">Infinity</option>
+      <option value="-Infinity">-Infinity</option>
+      <option value="NaN">NaN</option>
+      <option value="0x7fefffffffffffff">bits: DBL_MAX</option>
+      <option value="0x3FF0000000000000">bits: 1.0</option>
+      <option value="0x0000000000000001">bits: min subnormal</option>
+      <option value="0x7ff8000000000000">bits: quiet NaN</option>
+    </select>
+  </div>
+
+  <div id="err"></div>
+  <div id="banner" class="banner" style="display:none"></div>
+
+  <label for="grid">64-bit layout</label>
+  <div id="grid" class="grid"></div>
+
+  <label for="breakdown">field breakdown</label>
+  <div id="breakdown" class="grid"></div>
+
+  <label for="bits">bit string (sign · exponent · mantissa)</label>
+  <div class="out" id="bits"></div>
+
+  <footer>floatkit &middot; an IEEE-754 utility on <a href="/">agent-02</a></footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+var inEl=document.getElementById('in');
+var errEl=document.getElementById('err');
+var bannerEl=document.getElementById('banner');
+var gridEl=document.getElementById('grid');
+var bdEl=document.getElementById('breakdown');
+var bitsEl=document.getElementById('bits');
+var memoEl=document.getElementById('memo');
+var toastEl=document.getElementById('toast');
+var exEl=document.getElementById('examples');
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function toast(m){ toastEl.textContent=m; toastEl.style.opacity=1; setTimeout(function(){toastEl.style.opacity=0;},1200); }
+function pad(s,n){ while(s.length<n) s='0'+s; return s; }
+
+/* ---------- pure IEEE-754 binary64 logic ---------- */
+
+var MASK32n=0xFFFFFFFFn;
+var M52n=0xFFFFFFFFFFFFFn;        /* low-52 mask  */
+var M53n=0x10000000000000n;       /* implicit leading 1 */
+var SIGNn=0x8000000000000000n;
+
+function numToU64(x){
+  var buf=new ArrayBuffer(8);
+  var dv=new DataView(buf);
+  dv.setFloat64(0,x,false);
+  var hi=BigInt(dv.getUint32(0,false)), lo=BigInt(dv.getUint32(4,false));
+  return (hi<<32n)|lo;
+}
+function u64ToNum(u){
+  var buf=new ArrayBuffer(8);
+  var dv=new DataView(buf);
+  dv.setUint32(0,Number((u>>32n)&MASK32n),false);
+  dv.setUint32(4,Number(u&MASK32n),false);
+  return dv.getFloat64(0,false);
+}
+
+/* Classify a 64-bit pattern. */
+function classify(u){
+  var sign=((u&SIGNn)!==0n);
+  var e=Number((u>>52n)&0x7FFn);
+  var mant=u&M52n;
+  if(e===0x7FF){
+    if(mant===0n) return {kind:'inf',sign:sign,label:sign?'-Infinity':'+Infinity',cls:'i'};
+    var quiet=(mant&(1n<<51n))!==0n;
+    return {kind:'nan',sign:sign,quiet:quiet,label:quiet?'quiet NaN':'signaling NaN',cls:'x'};
+  }
+  if(e===0){
+    if(mant===0n) return {kind:'zero',sign:sign,label:sign?'-0':'+0',cls:'z'};
+    return {kind:'subnormal',sign:sign,expBits:0,mant:mant,label:'subnormal',cls:'s'};
+  }
+  return {kind:'normal',sign:sign,expBits:e,mant:mant,label:'normal',cls:'n'};
+}
+
+function decompose(u){
+  var c=classify(u);
+  var signBit=((u&SIGNn)!==0n)?1:0;
+  var e=Number((u>>52n)&0x7FFn);
+  var mant=u&M52n;
+  var isNormalSub = (c.kind==='normal'||c.kind==='subnormal');
+  var isNormal = (c.kind==='normal');
+  return {
+    signBit:signBit,
+    expBits:isNormalSub?e:null,
+    expBitsBin:isNormalSub?pad(e.toString(2),11):null,
+    unbiased:isNormal?e-1023:null,
+    mantBin:isNormalSub?pad(mant.toString(2),52):null,
+    mantHex:isNormalSub?pad(mant.toString(16),13):null,
+    significand:isNormalSub?Number(M53n|mant):null,
+    kind:c.kind, sign:c.sign, label:c.label, cls:c.cls,
+    ulp:null
+  };
+}
+
+var CLSNAME={n:'normal',z:'zero',s:'subnormal',i:'infinity',x:'nan'};
+
+function bin(u){return pad(u.toString(2),64);}
+function hex(u){return pad(u.toString(16),16);}
+function bytesStr(u){
+  var h=hex(u), out=[];
+  for(var i=0;i<16;i+=2) out.push(h.slice(i,i+2));
+  return out.join(' ');
+}
+function nib(s){ return s.replace(/(.{4})/g,'$1 ').trim(); }
+
+function fmt(x){
+  if(x==null||(typeof x==='number'&&isNaN(x))) return '—';
+  if(x===Infinity) return '∞'; if(x===-Infinity) return '-∞';
+  if(Math.abs(x)>=1e15||(Math.abs(x)>0&&Math.abs(x)<1e-9)) return x.toExponential(6).replace(/(\.\d*?)0+e/,'$1e').replace(/\.e/,'e');
+  return String(parseFloat(x.toPrecision(14)));
+}
+
+/* Parse a user string. Returns {u} pattern, {num}, or {err}. */
+function parse(raw){
+  var s=(raw||'').trim();
+  if(!s) return {err:'empty input — type a number or a bit pattern'};
+  var lower=s.toLowerCase();
+  if(lower==='nan'||lower==='+nan'||lower==='-nan') return {num:NaN};
+  if(lower==='infinity'||lower==='inf'||lower==='+infinity'||lower==='+inf') return {num:Infinity};
+  if(lower==='-infinity'||lower==='-inf') return {num:-Infinity};
+  /* 0x-prefixed 16-digit hex */
+  if(/^0[xX][0-9a-fA-F]{16}$/.test(s)) return {u:BigInt('0x'+s.substring(2))};
+  /* bare 16 hex digits (only if it contains at least one a-f — otherwise it's a decimal integer) */
+  if(/^[0-9a-fA-F]{16}$/.test(s) && /[a-fA-F]/.test(s)) return {u:BigInt('0x'+s)};
+  /* 64 binary bits */
+  if(/^[01]{64}$/.test(s)) return {u:BigInt('0b'+s)};
+  if(/^[01][01_\s]+$/.test(s)){
+    var b=s.replace(/[\s_]/g,'');
+    if(b.length===64) return {u:BigInt('0b'+b)};
+    return {err:'binary pattern must have exactly 64 bits'};
+  }
+  /* 8 byte groups (1-2 hex each) */
+  var hg=s.split(/\s+/).filter(function(t){return t!=='';});
+  if(hg.length===8){
+    var ok=true, acc=0n;
+    for(var i=0;i<8;i++){
+      if(!/^[0-9a-fA-F]{1,2}$/.test(hg[i])){ok=false;break;}
+      acc=(acc<<8n)|BigInt('0x'+hg[i]);
+    }
+    if(ok) return {u:acc};
+    return {err:'byte pattern: each of the 8 groups must be 1–2 hex digits'};
+  }
+  /* decimal number */
+  var v=Number(s);
+  if(isNaN(v)) return {err:'unrecognized "'+s+'" — give a number, 16 hex digits, 64 bits, or 8 bytes'};
+  return {num:v};
+}
+
+/* Main analyzer. */
+function analyze(raw){
+  var p=parse(raw);
+  if(p.err) return {err:p.err};
+  var u, inputNum, isPattern;
+  if(p.u!==undefined){ u=p.u; isPattern=true; inputNum=u64ToNum(u); }
+  else { u=numToU64(p.num); isPattern=false; inputNum=p.num; }
+  var d=decompose(u);
+  d.pattern=u; d.inputNum=inputNum; d.isPattern=isPattern;
+  d.hexStr=hex(u); d.binStr=bin(u); d.byteStr=bytesStr(u);
+  if(d.kind==='normal') d.ulp=Math.pow(2,d.unbiased);
+  else if(d.kind==='subnormal'||d.kind==='zero') d.ulp=Math.pow(2,-1074);
+  if(d.kind==='nan') d.valHuman='NaN';
+  else if(d.kind==='inf') d.valHuman=(d.sign?'-':'+')+'∞';
+  else d.valHuman=fmt(inputNum);
+  return d;
+}
+
+/* ---------- DOM rendering ---------- */
+
+function copyBtn(text){ return '<div class="c"><button data-copy="'+esc(text)+'">copy</button></div>'; }
+function card(ot, ov, copyTxt){
+  return '<div class="out"><div class="ot">'+ot+'</div><div class="ov">'+esc(ov)+'</div>'+copyBtn(copyTxt||ov)+'</div>';
+}
+
+function render(){
+  memoEl.textContent=''; errEl.innerHTML=''; bannerEl.style.display='none';
+  gridEl.innerHTML=''; bdEl.innerHTML=''; bitsEl.innerHTML='';
+
+  var raw=inEl.value;
+  var d=analyze(raw);
+  if(d.err){ errEl.innerHTML='<p>'+esc(d.err)+'</p>'; return; }
+
+  bannerEl.style.display='block';
+  bannerEl.innerHTML='<span class="cls '+d.cls+'">'+CLSNAME[d.cls]+'</span>'
+    +' <span style="color:'+(d.sign?'var(--accent2)':'var(--accent)')+'">'+esc(d.valHuman)+'</span>'
+    +'<span class="muted" style="margin-left:10px">'+esc(d.hexStr)+'</span>';
+
+  var cards=[
+    card('value', d.valHuman),
+    card('64-bit hex', d.hexStr, d.hexStr),
+    card('64-bit binary', d.binStr, d.binStr),
+    card('bytes (big-endian)', d.byteStr, d.byteStr)
+  ];
+  gridEl.innerHTML=cards.join('');
+
+  var rows=[
+    ['sign bit', String(d.signBit)],
+    ['biased exponent (11 bits)', d.expBitsBin+' = '+d.expBits],
+    ['unbiased exponent', d.kind==='normal'?String(d.unbiased):'— (subnormal encodes −1022)'],
+    ['mantissa (52 bits, frac)', d.mantBin],
+    ['significand (53 bits, +implicit 1)', String(d.significand)],
+    ['ULP (gap between neighbors)', d.ulp!=null?fmt(d.ulp):'—']
+  ];
+  var bh='';
+  for(var i=0;i<rows.length;i++){
+    var t=rows[i][1];
+    bh+='<div class="out"><div class="ot">'+rows[i][0]+'</div><div class="ov">'+esc(t)+'</div>'+copyBtn(t)+'</div>';
+  }
+  bdEl.innerHTML=bh;
+
+  bitsEl.innerHTML='<div class="bitline">'
+    +'<span style="color:#f85149">'+nib(d.binStr.slice(0,1))+'</span>'
+    +' <span style="color:#58a6ff">'+nib(d.binStr.slice(1,12))+'</span>'
+    +' <span style="color:#3fb950">'+nib(d.binStr.slice(12,64))+'</span>'
+    +'</div><div class="muted" style="font-size:12px">sign · exponent · mantissa (spaced in nibbles)</div>';
+}
+
+/* ---------- wiring ---------- */
+
+function b64u(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function decodeB64url(s){
+  var t=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(t.length%4) t+='=';
+  return decodeURIComponent(escape(atob(t)));
+}
+
+function updateHash(){
+  var raw=inEl.value;
+  var enc=b64u(raw);
+  try{ history.replaceState(null,'','#f='+enc); }
+  catch(e){}
+  memoEl.textContent='share link ready';
+}
+
+function tryLoad(){
+  var h=window.location.hash;
+  if(!h) return false;
+  if(h.substring(0,3)!=='#f=') return false;
+  try{
+    var v=decodeB64url(h.substring(3));
+    inEl.value=v;
+    return true;
+  }catch(e){ return false; }
+}
+
+function renderAll(){
+  render();
+  updateHash();
+  memoEl.textContent='';
+}
+
+inEl.addEventListener('input',renderAll);
+document.getElementById('link').addEventListener('click',function(){
+  updateHash();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(window.location.href).then(function(){toast('share link copied');});
+  } else {
+    var tmp=document.createElement('textarea'); tmp.value=window.location.href;
+    document.body.appendChild(tmp); tmp.select();
+    try{document.execCommand('copy');}catch(e){}
+    document.body.removeChild(tmp); toast('share link copied');
+  }
+});
+document.getElementById('cl').addEventListener('click',function(){
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){ inEl.value=t; renderAll(); toast('pasted'); });
+  } else toast('clipboard unavailable');
+});
+exEl.addEventListener('change',function(){ inEl.value=exEl.value; renderAll(); });
+/* copy buttons */
+document.addEventListener('click',function(e){
+  if(e.target && e.target.dataset && e.target.dataset.copy){
+    var val=e.target.dataset.copy;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(val).then(function(){toast('copied');});
+    } else {
+      var tmp=document.createElement('textarea'); tmp.value=val;
+      document.body.appendChild(tmp); tmp.select();
+      try{document.execCommand('copy');}catch(err){}
+      document.body.removeChild(tmp); toast('copied');
+    }
+  }
+});
+window.addEventListener('hashchange',function(){
+  if(tryLoad()) render();
+});
+
+if(!tryLoad()) render();
+</script>
+</body>
+</html>

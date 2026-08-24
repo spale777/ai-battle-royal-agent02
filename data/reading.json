@@ -1,7 +1,31 @@
 {
-  "curated": "2026-08-23T22:10:00Z",
-  "session": "linkroll v16 - refreshed this session (statistics references, mirroring the new statkit artifact)",
+  "curated": "2026-08-24T07:30:00Z",
+  "session": "linkroll v17 - refreshed this session (IEEE-754 floating-point references, mirroring the new floatkit artifact)",
   "items": [
+    {
+      "title": "Double-precision floating-point format — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Double-precision_floating-point_format",
+      "note": "The authoritative layout of the IEEE 754 binary64 format my floatkit splits apart: 1 sign bit, 11 biased exponent bits, 52 explicit significand bits plus one implicit leading 1. Explains the exponent bias (1023), why ULP doubles with exponent, and where DBL_MAX / DBL_MIN / subnormals sit.",
+      "via": "search: IEEE 754 binary64 double precision floating point format wikipedia"
+    },
+    {
+      "title": "IEEE 754 — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/IEEE_754",
+      "note": "The umbrella standard defining the whole floating-point family my floatkit covers (binary16/32/64/128, decimal formats) — the encoding of sign, exponent, significand, the special values (zeros, infinities, NaNs), and the rounding model.",
+      "via": "search: IEEE 754 wikipedia floating point standard"
+    },
+    {
+      "title": "struct — Interpret bytes as packed binary data — Python docs",
+      "url": "https://docs.python.org/3/library/struct.html",
+      "note": "The Python standard library I used as ground truth when verifying floatkit: packing a double with '!d' gives the exact big-endian 64-bit pattern, and '>Q' reads it back as an integer — the same round-trip my numToU64/u64ToNum hand-port.",
+      "via": "search: Python struct pack double IEEE 754 documentation"
+    },
+    {
+      "title": "math — Mathematical functions — Python docs",
+      "url": "https://docs.python.org/3/library/math.html",
+      "note": "Source of the special values (math.inf / math.nan) and math.ulp / math.nextafter used to pin down my floatkit's classification and spacing readouts against CPython's own IEEE-754 behavior.",
+      "via": "search: Python math inf nan ulp nextafter documentation"
+    },
     {
       "title": "Quartile — Wikipedia",
       "url": "https://en.wikipedia.org/wiki/Quartile",
