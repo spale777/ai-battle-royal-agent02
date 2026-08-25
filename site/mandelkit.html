@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mandelkit &mdash; a zoomable Mandelbrot / Julia explorer (agent-02)</title>
+<style>
+  :root{ --bg:#0b0e14; --panel:#12161f; --line:#1f2634; --fg:#d6dde8; --mut:#7a8496;
+    --accent:#4f8cff; --accent2:#36d07a; --btn:#1b2230 }
+  *{box-sizing:border-box}
+  body{ margin:0; font:15px/1.45 ui-monospace,Menlo,Consolas,monospace; color:var(--fg);
+    background:radial-gradient(120% 90% at 15% -10%, #15202f 0%, transparent 55%),
+      radial-gradient(120% 90% at 100% 110%, #141a2b 0%, transparent 60%), var(--bg);
+    min-height:100vh }
+  .wrap{ max-width:1120px; margin:0 auto; padding:26px 18px 70px }
+  h1{ font-size:22px; margin:0 0 4px; letter-spacing:.02em }
+  h1 .num{ color:var(--accent2); font-size:15px; margin-right:8px; vertical-align:2px }
+  .sub{ color:var(--mut); margin:0 0 18px; font-size:12.5px }
+  .sub code{ background:var(--btn); padding:1px 6px; border-radius:4px; color:var(--fg) }
+  .grid{ display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; align-items:start }
+  @media (max-width:880px){ .grid{ grid-template-columns:1fr } }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px }
+  .card h2{ font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--mut);
+    margin:0 0 10px; font-weight:600 }
+  #cvwrap{ position:relative; background:#080b11; border-radius:8px; border:1px solid var(--line);
+    overflow:hidden; cursor:grab; touch-action:none }
+  #cvwrap.dragging{ cursor:grabbing }
+  canvas#cv{ display:block; width:100%; height:auto; display:block }
+  .ov{ position:absolute; inset:auto auto 8px 10px; color:#cfe0ff; font-size:11.5px;
+    background:rgba(8,11,17,.55); padding:3px 8px; border-radius:6px; pointer-events:none;
+    font-family:ui-monospace,Menlo,Consolas,monospace }
+  .controls{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px }
+  button{ background:var(--btn); color:var(--fg); border:1px solid var(--line); border-radius:7px;
+    padding:7px 14px; font:inherit; font-size:13px; cursor:pointer; transition:.12s }
+  button:hover{ border-color:var(--accent); color:#fff }
+  button.primary{ background:#1c3a63; border-color:var(--accent) }
+  button.on{ border-color:var(--accent2); color:var(--accent2) }
+  .row{ margin-top:11px }
+  .row label{ font-size:12px; color:var(--mut); display:block; margin-bottom:5px;
+    text-transform:uppercase; letter-spacing:.08em }
+  input[type=text], input[type=number]{ background:#0d1119; border:1px solid var(--line); color:var(--fg);
+    font:inherit; font-size:13px; border-radius:7px; padding:7px 10px; width:100% }
+  input[type=text]:focus, input[type=number]:focus{ outline:none; border-color:var(--accent) }
+  input[type=range]{ width:100%; accent-color:var(--accent) }
+  .statline{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin-top:8px }
+  .statline b{ color:var(--accent2); font-weight:700 }
+  .hint{ font-size:11.5px; color:var(--mut); margin-top:9px; line-height:1.5 }
+  .btnrow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+  .btnrow button{ padding:5px 10px; font-size:12px }
+  .palrow{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px }
+  .pal{ width:26px; height:20px; border-radius:5px; border:1px solid var(--line); cursor:pointer;
+    background:var(--line) }
+  .pal.on{ border-color:var(--accent2); box-shadow:0 0 0 1px var(--accent2) }
+  .err{ color:#ff5d5d; font-size:12.5px; min-height:16px; margin-top:6px }
+  a{ color:var(--accent); text-decoration:none } a:hover{ text-decoration:underline }
+  .foot{ margin-top:26px; color:var(--mut); font-size:11.5px; line-height:1.6;
+    border-top:1px solid var(--line); padding-top:14px }
+  .foot code{ background:var(--btn); padding:0 5px; border-radius:4px }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="num">28th artifact</span>&#9673; mandelkit <span style="color:var(--mut);font-weight:400;font-size:14px">&mdash; a zoomable fractal explorer</span></h1>
+  <p class="sub">Mandelbrot and Julia sets in live IEEE-754 detail. Drag to pan, wheel / buttons to zoom, click the Mandelbrot to jump to that <code>c</code>'s Julia set. The whole viewport lives in the address bar
+  <code>#m=&hellip;</code> &mdash; every zoom reproduces itself as a shareable link. Escape-count determinism proven against a Python corpus.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Fractal</h2>
+      <div class="btnrow" id="fractalBtns">
+        <button data-f="m" class="primary on">Mandelbrot</button>
+        <button data-f="j">Julia</button>
+      </div>
+      <div class="row">
+        <label>Center (re, im) &mdash; <span id="ctrLabel">-0.500000, 0.000000</span></label>
+        <input id="ctrInput" type="text" value="-0.5, 0" spellcheck="false">
+      </div>
+      <div class="row">
+        <label>Span (complex width) &mdash; <b id="spanLabel" style="color:var(--accent2)">3.0000</b></label>
+        <input id="spanInput" type="range" min="0.000000001" max="8" step="any" value="3">
+      </div>
+      <div class="row">
+        <label>Max iterations &mdash; <b id="itLabel" style="color:var(--accent2)">120</b></label>
+        <input id="itInput" type="range" min="10" max="1500" step="10" value="120">
+      </div>
+      <div class="row">
+        <label>Palette</label>
+        <div class="palrow" id="palRow"></div>
+      </div>
+      <div class="btnrow">
+        <button id="zoomIn">+ zoom</button>
+        <button id="zoomOut">&ndash; zoom</button>
+        <button id="reset">reset view</button>
+        <button id="copyLink" class="primary">copy link</button>
+      </div>
+      <div class="row" id="juliaRow" style="display:none">
+        <label>Julia constant c &mdash; <b id="jcLabel" style="color:var(--accent2)">-0.8 + 0.156i</b></label>
+        <input id="jcInput" type="text" value="-0.8, 0.156" spellcheck="false">
+        <div class="btnrow">
+          <button data-jc="0.285,0.01">0.285+0.01i</button>
+          <button data-jc="-0.8,0.156">-0.8+0.156i</button>
+          <button data-jc="-0.7269,0.1889">-0.7269+0.1889i</button>
+          <button data-jc="-0.4,0.6">-0.4+0.6i</button>
+          <button data-jc="0,0.8">dendrite·i</button>
+          <button data-jc="-1,0">-1+0i</button>
+        </div>
+      </div>
+      <div class="statline">
+        <span>render <b id="pxCount">-</b></span>
+        <span>escape avg <b id="avgIt">-</b></span>
+        <span>fps <b id="fps">-</b></span>
+      </div>
+      <div class="hint">Click &ldquo;Mandelbrot&rdquo; and click anywhere in the set to jump to that <code>c</code>'s Julia set. Drag pans; wheel zooms around the cursor. Center / span / iterations / Julia-<code>c</code> all persist in the URL.</div>
+    </div>
+
+    <div class="card" style="grid-column:1 / -1">
+      <div id="cvwrap">
+        <canvas id="cv" width="880" height="560"></canvas>
+        <div class="ov" id="ov"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <strong>How it works.</strong> Each pixel maps to a complex coordinate. For <b>Mandelbrot</b> the orbit is
+    <code>z<sub>n+1</sub> = z<sub>n</sub><sup>2</sup> + c</code> with <code>z<sub>0</sub> = 0</code> and <code>c</code> = the pixel;
+    for <b>Julia</b>, <code>z<sub>0</sub></code> = the pixel and <code>c</code> is a fixed constant. Colouring uses the escape iteration count
+    (a point that hasn't escaped after max-iterations is &ldquo;in&rdquo; the set, drawn black). Because <code>z&rarr;z&sup2;+c</code> uses only
+    <code>+</code> / <code>&times;</code> on IEEE-754 doubles, the integer escape count is <em>byte-for-byte reproducible</em> in another
+    language: <code>scripts/test-mandelkit.js</code> loads this page's real escape core out of the HTML and diffs it against
+    <code>scripts/vectors-mandelkit.json</code>, a Python ground-truth corpus &mdash; proving the browser and Python agree on every
+    bailout decision. The whole viewport (fractal kind, center, span, iterations, palette, Julia <code>c</code>) is encoded base64url in
+    <code>#m=</code>, so any zoom is a shareable URL that reproduces itself.
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ CONSTANTS ============ */
+var B64U_CH = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+var CANV_W = 880, CANV_H = 560;
+
+/* ============ URL state helpers ============ */
+function b64uEncode(str){
+  // btoa+atob work on plain HTTP (unlike crypto.subtle); strip padding &
+  // translate to base64url. Proven form reused across the whole shelf (pitfall: a
+  // hand-rolled encoder that omits '=' padding emits a spurious trailing char and
+  // the share hash silently fails to round-trip).
+  return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64uDecode(str){
+  str = str.replace(/-/g,'+').replace(/_/g,'/');
+  while (str.length % 4) str += '=';
+  return decodeURIComponent(escape(atob(str)));
+}
+
+/* ==================== PURE CORE ==================== */
+/* === CORE BEGIN === */
+/* Escape-time iteration count.
+   For Mandelbrot: z starts at the pixel (zr,zi)=(0,0)-override handled by caller passing zr=0,zi=0? No:
+   unified form — orbit z starts at (zr,zi), constant c=(cr,ci). Caller picks which is the pixel and which is constant.
+   Returns the number of iterations before |z|>2 (bail at x^2+y^2>4), or maxiter if never escaped (inside). */
+function escCount(zr, zi, cr, ci, maxiter){
+  var x = zr, y = zi;            // z_0
+  var cx = cr, cy = ci;          // c (constant)
+  var n = 0;
+  var x2, y2;
+  while (n < maxiter){
+    x2 = x*x; y2 = y*y;
+    if (x2 + y2 > 4.0) break;    // |z| > 2 -> escaped
+    var nx = x2 - y2 + cx;       // z^2 + c
+    var ny = 2*x*y + cy;
+    x = nx; y = ny;
+    n++;
+  }
+  return n;
+}
+/* === CORE END === */
+/* ==================== /PURE CORE ==================== */
+
+/* ============ Palettes (cosmetic) ============ */
+var PALETTES = [
+  { id:"psyched", name:"psychedelic",
+    css:"linear-gradient(90deg,#000,#0ff,#f0f,#ff0,#fff)",
+    fn:function(t){ // t in [0,1), smooth
+      var h = (t*6)%1, c = 255*t, s = Math.sin(Math.PI*t), p = 0.6+0.4*Math.sin(Math.PI*2*t);
+      var r,g,b;
+      if (t < 0.167){ r=0; g=255*c; b=255; }
+      else if (t < 0.5){ r=255*c; g=255; b=255-(255*c); }
+      else if (t < 0.833){ r=255; g=255-(255*c); b=0; }
+      else { r=255-(255*c); g=0; b=255*c; }
+      return [r|0, g|0, b|0];
+    }},
+  { id:"fire", name:"blue-fire",
+    css:"linear-gradient(90deg,#000,#003,#006,#0ff,#fff)",
+    fn:function(t){
+      var r = 0, g = 0, b = 0;
+      if (t < 0.5){ b = t*2*255; }
+      else { b = 255; r = (t-0.5)*2*255; g = Math.min(255, (t-0.5)*4*255); }
+      return [r|0, g|0, b|0];
+    }},
+  { id:"grape", name:"grapefruit",
+    css:"linear-gradient(90deg,#000,#800,#f0f,#f80,#fff)",
+    fn:function(t){
+      var r = t*255, g = Math.max(0, 255 - Math.abs(t*4-2)*255), b = 255 - t*255;
+      return [(r*0.8)|0, (g*0.9)|0, (b*0.9)|0];
+    }},
+  { id:"gray", name:"grayscale",
+    css:"linear-gradient(90deg,#000,#fff)",
+    fn:function(t){ var v = (Math.pow(t,0.5)*255)|0; return [v,v,v]; }}
+];
+
+/* ============ State ============ */
+var D = {
+  f:"m",            // 'm' Mandelbrot | 'j' Julia
+  c:[-0.5, 0.0],    // center re,im
+  span:3.0,         // complex width across canvas
+  it:120,           // max iterations
+  p:"psyched",      // palette id
+  jc:[-0.8, 0.156], // Julia constant
+  w:CANV_W, h:CANV_H
+};
+
+/* ============ Canvas ============ */
+var cv, ctx, img;
+function initCanvas(){
+  cv = document.getElementById("cv");
+  var wrap = document.getElementById("cvwrap");
+  cv.width = CANV_W; cv.height = CANV_H;
+  ctx = cv.getContext("2d");
+  img = ctx.createImageData(CANV_W, CANV_H);
+  D.w = CANV_W; D.h = CANV_H;
+}
+
+/* ============ Rendering (the full render loop uses the proven core) ============ */
+var renderMs = 0;
+function render(){
+  var t0 = performance.now();
+  var pal = PALETTES.filter(function(p){ return p.id === D.p; })[0] || PALETTES[0];
+  var cx = D.c[0], cy = D.c[1], span = D.span, maxit = D.it;
+  var jr = D.jc[0], ji = D.jc[1];
+  var w = D.w, h = D.h;
+  var aspect = h / w;             // complex height = span * aspect
+  var pxPerUnit = w / span;
+  var halfW = w/2, halfA = span/2, halfHA = span*aspect/2;
+  var data = img.data;
+  var x2 = w*span; var outside = 0, total = 0;
+  var j = 0, i = 0;
+  // Precompute per-pixel scaled coordinates along the row for speed is not needed; do per-pixel.
+  for (j = 0; j < h; j++){
+    var im = cy + halfHA - (j/h) * span * aspect;   // top row = +im
+    for (i = 0; i < w; i++){
+      var re = cx + (i/w - 0.5) * span;
+      var n;
+      if (D.f === 'm'){
+        n = escCount(0, 0, re, im, maxit);          // z0 = 0, c = pixel
+      } else {
+        n = escCount(re, im, jr, ji, maxit);        // z0 = pixel, c = constant
+      }
+      var idx = (j*w + i) * 4;
+      if (n >= maxit){ data[idx]=0; data[idx+1]=0; data[idx+2]=0; data[idx+3]=255; }
+      else {
+        var t = n / maxit;
+        var c3 = pal.fn(t);
+        data[idx]=c3[0]; data[idx+1]=c3[1]; data[idx+2]=c3[2]; data[idx+3]=255;
+        outside++; total += n;
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  renderMs = performance.now() - t0;
+  document.getElementById("pxCount").textContent = (w*h).toLocaleString() + " px";
+  document.getElementById("avgIt").textContent = outside ? (total/outside).toFixed(1) : "0.0";
+  var fpsTxt = document.getElementById("fps");
+  if (renderMs > 0) fpsTxt.textContent = Math.round(1000/renderMs) + " (" + Math.round(renderMs) + "ms)";
+  updateOverlay();
+}
+
+/* ============ Overlay / labels ============ */
+function updateOverlay(){
+  document.getElementById("ov").textContent =
+    (D.f === 'm' ? "Mandelbrot" : "Julia c = " + fmtJ(D.jc)) +
+    "  ·  center " + D.c[0].toFixed(6) + ", " + D.c[1].toFixed(6) +
+    "  ·  span " + D.span.toExponential(4) + "  ·  " + D.it + " it";
+  document.getElementById("ctrLabel").textContent = D.c[0].toFixed(6) + ", " + D.c[1].toFixed(6);
+  document.getElementById("spanLabel").textContent = D.span.toFixed(4);
+  document.getElementById("itLabel").textContent = D.it;
+  document.getElementById("jcLabel").textContent = fmtJ(D.jc);
+}
+function fmtJ(jc){ return jc[0].toFixed(4) + " + " + jc[1].toFixed(4) + "i"; }
+
+/* ============ URL state ============ */
+function stateObj(){
+  return { f:D.f, c:D.c, s:D.span, i:D.it, p:D.p, jc:D.jc };
+}
+function updateHash(){
+  var json = JSON.stringify(stateObj());
+  try { history.replaceState(null, "", "#m=" + b64uEncode(json)); }
+  catch(e){}
+}
+function applyHash(){
+  var h = window.location.hash;
+  if (h && /^#m=/.test(h)){
+    try {
+      var o = JSON.parse(b64uDecode(h.slice(3)));
+      if (o && typeof o === 'object'){
+        if (o.f === 'm' || o.f === 'j') D.f = o.f;
+        if (Array.isArray(o.c) && o.c.length === 2 && isFinite(o.c[0]) && isFinite(o.c[1])) D.c = o.c;
+        if (isFinite(o.s) && o.s > 0) D.span = o.s;
+        if (isFinite(o.i) && o.i >= 1) D.it = Math.min(5000, Math.round(o.i));
+        if (typeof o.p === 'string' && PALETTES.some(function(p){ return p.id === o.p; })) D.p = o.p;
+        if (Array.isArray(o.jc) && o.jc.length === 2 && isFinite(o.jc[0]) && isFinite(o.jc[1])) D.jc = o.jc;
+      }
+    } catch(e){}
+  }
+  syncWidgets();
+}
+
+/* ============ Widget sync ============ */
+function syncWidgets(){
+  document.querySelectorAll("#fractalBtns button").forEach(function(b){
+    var on = (b.dataset.f === D.f);
+    b.classList.toggle("on", on);
+    b.classList.toggle("primary", on);
+  });
+  document.getElementById("ctrInput").value = D.c[0].toFixed(6).replace(/0+$/,'').replace(/\.$/,'') + ", " + D.c[1].toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  document.getElementById("spanInput").value = clampSpan(D.span);
+  document.getElementById("itInput").value = D.it;
+  document.getElementById("jcInput").value = D.jc[0] + ", " + D.jc[1];
+  document.getElementById("juliaRow").style.display = D.f === 'j' ? "block" : "none";
+  buildPalettes();
+}
+
+function clampSpan(s){ return Math.min(8, Math.max(1e-9, s)); }
+
+function buildPalettes(){
+  var row = document.getElementById("palRow");
+  row.innerHTML = "";
+  PALETTES.forEach(function(p){
+    var el = document.createElement("div");
+    el.className = "pal" + (p.id === D.p ? " on" : "");
+    el.style.background = p.css;
+    el.title = p.name;
+    el.addEventListener("click", function(){
+      D.p = p.id;
+      buildPalettes();
+      render(); updateHash();
+    });
+    row.appendChild(el);
+  });
+}
+
+/* ============ Pan / zoom / interactions ============ */
+var drag = null;
+function attachCv(){
+  var wrap = document.getElementById("cvwrap");
+  wrap.addEventListener("mousedown", function(e){
+    drag = { x:e.clientX, y:e.clientY, cx:D.c[0], cy:D.c[1], moved:false };
+    wrap.classList.add("dragging");
+  });
+  window.addEventListener("mousemove", function(e){
+    if (!drag) return;
+    var rect = cv.getBoundingClientRect();
+    var dx = (e.clientX - drag.x) / rect.width;   // in fraction of width
+    var dy = (e.clientY - drag.y) / rect.height;  // in fraction of height
+    if (Math.abs(e.clientX-drag.x) + Math.abs(e.clientY-drag.y) > 3) drag.moved = true;
+    D.c[0] = drag.cx - dx * D.span;
+    D.c[1] = drag.cy + dy * D.span * (D.h/D.w);   // drag down -> move view up (im increases down-screen minus)
+    render(); updateHash(); syncCtr();
+  });
+  window.addEventListener("mouseup", function(){
+    if (drag && drag.moved){
+      render(); updateHash();
+    }
+    drag = null;
+    wrap.classList.remove("dragging");
+  });
+  wrap.addEventListener("wheel", function(e){
+    e.preventDefault();
+    var rect = cv.getBoundingClientRect();
+    var fx = (e.clientX - rect.left) / rect.width;   // 0..1 across width
+    var fy = (e.clientY - rect.top) / rect.height;   // 0..1 across height
+    var factor = (e.deltaY > 0) ? 1.25 : 0.8;        // scroll down = zoom out
+    var newSpan = clampSpan(D.span * factor);
+    // keep cursor's complex point fixed under the mouse
+    var reAt = D.c[0] + (fx - 0.5) * D.span;
+    var imAt = D.c[1] - (fy - 0.5) * D.span * (D.h/D.w);
+    D.c[0] = reAt - (fx - 0.5) * newSpan;
+    D.c[1] = imAt + (fy - 0.5) * newSpan * (D.h/D.w);
+    D.span = newSpan;
+    render(); updateHash(); syncCtr();
+  }, { passive:false });
+  // clicking Mandelbrot -> jump to that c's Julia
+  wrap.addEventListener("click", function(e){
+    if (drag && drag.moved) return;
+    if (D.f !== 'm') return;
+    var rect = cv.getBoundingClientRect();
+    var fx = (e.clientX - rect.left) / rect.width;
+    var fy = (e.clientY - rect.top) / rect.height;
+    // The click hits the set iff the pixel at that point is inside (black n>=maxit)
+    var re = D.c[0] + (fx - 0.5) * D.span;
+    var im = D.c[1] - (fy - 0.5) * D.span * (D.h/D.w);
+    if (escCount(0,0,re,im,D.it) >= D.it){   // inside the set -> jump to that c's Julia set
+      D.jc = [re, im];
+      D.f = 'j';
+      document.getElementById("jcInput").value = re + ", " + im;
+      syncWidgets();                       // toggles the Julia row + fractal buttons on
+      syncCtr();
+      updateHash(); render();
+    }
+  });
+}
+function syncCtr(){
+  document.getElementById("ctrLabel").textContent = D.c[0].toFixed(6) + ", " + D.c[1].toFixed(6);
+  document.getElementById("spanLabel").textContent = D.span.toFixed(4);
+  document.getElementById("jcLabel").textContent = fmtJ(D.jc);
+}
+
+/* ============ Control handlers ============ */
+function wireControls(){
+  document.querySelectorAll("#fractalBtns button").forEach(function(b){
+    b.addEventListener("click", function(){
+      D.f = b.dataset.f;
+      if (D.f === 'm'){
+        // reset to a nice Mandelbrot framing when switching from Julia
+        D.span = 3.0; D.c = [-0.5, 0];
+      }
+      syncWidgets(); render(); updateHash();
+    });
+  });
+  document.getElementById("ctrInput").addEventListener("change", function(){
+    var v = parsePair(this.value);
+    if (v){ D.c = v; syncWidgets(); render(); updateHash(); }
+  });
+  document.getElementById("spanInput").addEventListener("input", function(){
+    D.span = clampSpan(parseFloat(this.value) || 3.0);
+    syncCtr(); render(); updateHash();
+  });
+  document.getElementById("itInput").addEventListener("input", function(){
+    D.it = Math.max(1, Math.round(parseFloat(this.value) || 120));
+    syncCtr(); render(); updateHash();
+  });
+  document.getElementById("jcInput").addEventListener("change", function(){
+    var v = parsePair(this.value);
+    if (v){ D.jc = v; syncCtr(); render(); updateHash(); }
+  });
+  document.querySelectorAll("[data-jc]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var v = parsePair(b.dataset.jc);
+      if (v){ D.jc = v; syncCtr(); render(); updateHash(); }
+    });
+  });
+  document.getElementById("zoomIn").addEventListener("click", function(){
+    D.span = clampSpan(D.span * 0.6); syncCtr(); render(); updateHash();
+  });
+  document.getElementById("zoomOut").addEventListener("click", function(){
+    D.span = clampSpan(D.span * 1.6); syncCtr(); render(); updateHash();
+  });
+  document.getElementById("reset").addEventListener("click", function(){
+    D.f = 'm'; D.c = [-0.5, 0]; D.span = 3.0; D.it = 120; D.jc = [-0.8, 0.156];
+    syncWidgets(); render(); updateHash();
+  });
+  document.getElementById("copyLink").addEventListener("click", function(){
+    updateHash();
+    var link = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(function(){ flashCopy(); }, function(){ prompt("Copy link", link); });
+    } else {
+      prompt("Copy link", link);
+    }
+  });
+  window.addEventListener("hashchange", function(){
+    applyHash(); render(); updateHash();
+  });
+}
+function flashCopy(){
+  var b = document.getElementById("copyLink");
+  var old = b.textContent;
+  b.textContent = "copied ✓";
+  setTimeout(function(){ b.textContent = old; }, 1200);
+}
+function parsePair(s){
+  if (!s) return null;
+  var parts = String(s).split(/[\s,;]+/).filter(Boolean).map(function(x){ return parseFloat(x); });
+  if (parts.length >= 2 && isFinite(parts[0]) && isFinite(parts[1])) return [parts[0], parts[1]];
+  return null;
+}
+
+/* ============ Boot ============ */
+function init(){
+  initCanvas();
+  applyHash();        // load URL state first (fills D + syncWidgets)
+  // syncCtr labels in case no hash
+  syncCtr();
+  wireControls();
+  attachCv();         // pan / wheel-zoom / click-to-Julia handlers (mandatory)
+  buildPalettes();
+  render();
+  updateHash();       // ensure the share link is present on fresh load (pitfall #13)
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>

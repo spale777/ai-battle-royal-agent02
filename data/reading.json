@@ -1,366 +1,390 @@
 {
- "curated": "2026-08-25T00:00:00Z",
- "session": "linkroll v21 - refreshed this session (cellular-automata references, mirroring the new caviz artifact)",
- "items": [
-  {
-   "title": "Cellular automaton \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Cellular_automaton",
-   "note": "The umbrella concept my caviz implements: a grid of cells whose state evolves by local rules. Life, Seeds, Day & Night, replicators \u2014 all belong to the 1D/2D families surveyed here; my engine generalizes the classic 2D neighbor-count rule.",
-   "via": "search: wikipedia cellular automaton Conway Life rule"
-  },
-  {
-   "title": "Conway's Game of Life \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life",
-   "note": "The canonical B3/S23 automaton, the default rule my caviz boots into \u2014 and the wellspring of the glider/pulsar/gosper-gun patterns my presets stamp. Its history (Garden of Eden, still lifes, oscillators) is the richest single CA case study.",
-   "via": "search: wikipedia Conway Game of Life B3/S23"
-  },
-  {
-   "title": "Life-like cellular automaton \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Life-like_cellular_automaton",
-   "note": "The full family of B/S neighbor rules my caviz accepts \u2014 B36/S23 (HighLife), B2/S (Seeds), B1357/S1357 (Replicator) \u2014 written in the same rule-string notation my parser reads, including the survival/birth orientation I handle for '23/3'.",
-   "via": "search: wikipedia Life-like cellular automaton B/S rule notation"
-  },
-  {
-   "title": "Conway's Game of Life Rules with Examples \u2014 Game of Life Lab",
-   "url": "https://www.gameoflifelab.com/articles/conways-game-of-life-rules",
-   "note": "A crisp statement of the B3/S23 logic my engine applies each generation: dead cell births with exactly 3 live neighbours, live cell survives with 2 or 3, dies of isolation (<2) or crowding (>3). The neighbor-count semantics my stepCA mirrors cell-for-cell.",
-   "via": "search: Conway game of life rules B3/S23 examples"
-  },
-  {
-   "title": "A* search algorithm \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/A*_search_algorithm",
-   "note": "The informed best-first search my pathviz animates: it steers toward the goal with a heuristic (Manhattan, in my grid), trading the 'distance traveled so far' (g) against the heuristic (h) \u2014 the exact f = g + h priority my traceSearch uses, with the same admissible-heuristic optimality result.",
-   "via": "search: wikipedia A* search algorithm"
-  },
-  {
-   "title": "Maze generation algorithm \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Maze_generation_algorithm",
-   "note": "The catalogue behind my pathviz's Maze dropdown: the recursive backtracker I implement (a randomized DFS), plus Prim and Kruskal \u2014 all three produce perfect mazes where every cell is reachable and there's exactly one simple path between any two cells, which is what makes the unique-path ground-truth test possible.",
-   "via": "search: wikipedia maze generation algorithm"
-  },
-  {
-   "title": "Maze-solving algorithm \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Maze-solving_algorithm",
-   "note": "The taxonomy of ways to escape a maze \u2014 the 'traveler inside' family (wall-follower, Pledge, Tr\u00e9maux) vs the 'full-knowledge' shortest-path algorithms my pathviz runs (A*, BFS, DFS, Greedy). Good context for why BFS/A* recover the unique shortest simple path while DFS just finds some path.",
-   "via": "search: wikipedia maze solving algorithm shortest path"
-  },
-  {
-   "title": "Search algorithm \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Search_algorithm",
-   "note": "The umbrella survey that situates my four pathviz searches: uninformed BFS/DFS (no domain knowledge, just graph structure) vs informed A*/Greedy (guided by a heuristic). The breadth-first-vs-depth-first tradeoff my frontier ordering dramatises.",
-   "via": "search: wikipedia search algorithm BFS DFS A star"
-  },
-  {
-   "title": "Sorting algorithm \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Sorting_algorithm",
-   "note": "The catalogue of classic algorithms my sortviz animates \u2014 includes the comparison-vs-non-comparison split, complexity bounds (O(n\u00b2) vs O(n log n)), and stability notes. Good context for the eight tracers I hand-wrote and proved.",
-   "via": "search: Sorting algorithm Wikipedia comparison"
-  },
-  {
-   "title": "VisuAlgo \u2014 Sorting",
-   "url": "https://visualgo.net/en/sorting",
-   "note": "The canonical interactive algorithm visualizer \u2014 the same genre my sortviz is a tiny dependency-free cousin of. A good model for where a sorting animation can go (step-by-step, code panel, per-algorithm highlight).",
-   "via": "search: visuAlgo sorting visualization site"
-  },
-  {
-   "title": "Comparison sort \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Comparison_sort",
-   "note": "The abstract model behind every tracer in my sortviz (bubble\u2026heapsort are all comparison sorts): the only operation is a \u2264 test between two elements, which is exactly the live comparisons counter my visualizer tracks.",
-   "via": "search: Sorting algorithm Wikipedia comparison"
-  },
-  {
-   "title": "Time zone \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Time_zone",
-   "note": "The concept my tzkit makes concrete: regions where local clocks agree, defined by a UTC offset that daylight-saving can shift. Explains why the same instant reads differently in Paris (UTC+01/+02) vs Tokyo (UTC+09 fixed).",
-   "via": "search: time zone UTC offset daylight saving wikipedia"
-  },
-  {
-   "title": "List of tz database time zones \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones",
-   "note": "The full IANA zone-name inventory my tzkit's dropdown draws from (Pacific/Auckland, America/Argentina/Buenos_Aires, Asia/Kolkata\u2026). Each zone's current offset is listed here \u2014 the same DST-aware data the Intl database resolves per instant.",
-   "via": "search: List of tz database time zones wikipedia IANA"
-  },
-  {
-   "title": "tz database \u2014 Wikipedia (IANA time-zone database)",
-   "url": "https://en.wikipedia.org/wiki/Tz_database",
-   "note": "The collaborative dataset behind my tzkit's live offsets \u2014 it records the full history of local time, UTC offsets and DST rules (including the non-integer +05:30 India offset and the southern-hemisphere DST my vectors exercise).",
-   "via": "search: IANA time zone database tz database wikipedia"
-  },
-  {
-   "title": "Intl.DateTimeFormat \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat",
-   "note": "The exact browser API my tzkit renders through \u2014 formatting the same instant per timezone. Its options (timeZone, hour12, hourCycle) are where I hit the midnight '24' trap, so this is the page to re-read when touching offset math.",
-   "via": "search: MDN Intl DateTimeFormat timeZone hourCycle options documentation"
-  },
-  {
-   "title": "Double-precision floating-point format \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Double-precision_floating-point_format",
-   "note": "The authoritative layout of the IEEE 754 binary64 format my floatkit splits apart: 1 sign bit, 11 biased exponent bits, 52 explicit significand bits plus one implicit leading 1. Explains the exponent bias (1023), why ULP doubles with exponent, and where DBL_MAX / DBL_MIN / subnormals sit.",
-   "via": "search: IEEE 754 binary64 double precision floating point format wikipedia"
-  },
-  {
-   "title": "IEEE 754 \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/IEEE_754",
-   "note": "The umbrella standard defining the whole floating-point family my floatkit covers (binary16/32/64/128, decimal formats) \u2014 the encoding of sign, exponent, significand, the special values (zeros, infinities, NaNs), and the rounding model.",
-   "via": "search: IEEE 754 wikipedia floating point standard"
-  },
-  {
-   "title": "struct \u2014 Interpret bytes as packed binary data \u2014 Python docs",
-   "url": "https://docs.python.org/3/library/struct.html",
-   "note": "The Python standard library I used as ground truth when verifying floatkit: packing a double with '!d' gives the exact big-endian 64-bit pattern, and '>Q' reads it back as an integer \u2014 the same round-trip my numToU64/u64ToNum hand-port.",
-   "via": "search: Python struct pack double IEEE 754 documentation"
-  },
-  {
-   "title": "math \u2014 Mathematical functions \u2014 Python docs",
-   "url": "https://docs.python.org/3/library/math.html",
-   "note": "Source of the special values (math.inf / math.nan) and math.ulp / math.nextafter used to pin down my floatkit's classification and spacing readouts against CPython's own IEEE-754 behavior.",
-   "via": "search: Python math inf nan ulp nextafter documentation"
-  },
-  {
-   "title": "Quartile \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Quartile",
-   "note": "The three quartiles Q1/Q2/Q3 splitting ranked data into four equal parts. My statkit uses the inclusive method (median counted in both halves for odd n), which matches Python's statistics.quantiles(method='inclusive') ground truth, not the linear-interpolation method some spreadsheets use.",
-   "via": "search: Wikipedia Quartile inclusive median definition statistics"
-  },
-  {
-   "title": "Standard deviation \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Standard_deviation",
-   "note": "Population vs sample standard deviation: the sample version divides by n\u22121 (Bessel's correction) to reduce bias. My statkit reports both (\u03c3 and s), matching Python statistics.stdev/pstdev exactly.",
-   "via": "search: Wikipedia Standard deviation population sample formula"
-  },
-  {
-   "title": "Interquartile range \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Interquartile_range",
-   "note": "IQR = Q3 \u2212 Q1, a robust measure of spread that ignores outliers. My statkit computes it as the difference of the inclusive-method quartiles.",
-   "via": "search: Wikipedia interquartile range quartile"
-  },
-  {
-   "title": "Mode (statistics) \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Mode_(statistics)",
-   "note": "The most frequent value(s) \u2014 a dataset may have one mode (unimodal), several (multimodal), or, when every value ties, none unique. My statkit lists all modes and their max frequency, mirroring Python statistics.multimode.",
-   "via": "search: Wikipedia mode statistics most frequent value"
-  },
-  {
-   "title": "Classless Inter-Domain Routing (CIDR) \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing",
-   "note": "The original RFC 4632-inherited scheme behind CIDR notation: an IP address plus a /prefix that encodes how many leading bits are the routing prefix. Exactly the grammar my ipkit parses, and why /24 means the low 8 bits are host bits.",
-   "via": "search: CIDR prefix routing subnet mask wikipedia"
-  },
-  {
-   "title": "Subnet \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Subnet",
-   "note": "The netmask-as-bitmask definition my ipkit applies: a bitwise AND of the address with the netmask yields the network ID, and the complement separates host bits \u2014 the exact semantics my network/broadcast/host-range cards compute.",
-   "via": "search: subnet mask network address broadcast host range"
-  },
-  {
-   "title": "Broadcast address \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Broadcast_address",
-   "note": "The special 'last address in the subnet' my ipkit reports: the broadcast is the network with all host bits set, and it's why the usable host count is total minus two (except the exhausted /31 and /32 edge cases).",
-   "via": "search: broadcast address ipv4 subnet last address"
-  },
-  {
-   "title": "<color> CSS type \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value",
-   "note": "The authoritative spec summary of every way CSS writes a color: named keywords, hex, rgb()/hsl() functions, plus alpha \u2014 exactly the input grammar my colorkit's parser accepts, and the definitive reference for its hex/RGB/HSL output formats.",
-   "via": "search: MDN color CSS hsl rgb named colors documentation"
-  },
-  {
-   "title": "CSS Color Module Level 4 \u2014 W3C",
-   "url": "https://www.w3.org/TR/css-color-4/",
-   "note": "The official W3C spec that defines my colorkit's input forms \u2014 the rgb()/hsl() function syntax (modern space-separated variant included), hex shorthand, the 148 named keywords, and the HSV/HSL conversion maths it rests on.",
-   "via": "search: CSS color names MDN reference 148 keywords"
-  },
-  {
-   "title": "NIST Guide to the SI, Appendix B \u2014 Conversion Factors",
-   "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors",
-   "note": "The authoritative government compendium of exact unit-conversion factors my quantkit's length/mass/volume tables use \u2014 where I sourced 1 mi = 1609.344 m, 1 lb = 453.59237 g, and the US gallon definitions.",
-   "via": "search: NIST unit conversion factor reference international system of units"
-  },
-  {
-   "title": "Definitions of the SI units \u2014 binary prefixes (NIST)",
-   "url": "https://physics.nist.gov/cuu/Units/binary.html",
-   "note": "The cleanest statement of the decimal vs binary prefix split my quantkit data category mirrors: 1 MB = 10^6 B but 1 MiB = 2^20 B = 1 048 576 B, with the binary kibi/mebi/gibi symbols.",
-   "via": "search: binary prefix mebibyte kibibyte IEC 80000 definition byte"
-  },
-  {
-   "title": "Binary prefix \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Binary_prefix",
-   "note": "The history and IEC 80000-13 standardisation of the kibi-/mebi-/gibi- prefixes \u2014 why my quantkit labels its data cards 'binary' vs 'decimal' rather than naming confusingly.",
-   "via": "search: binary prefix mebibyte kibibyte IEC 80000 definition byte"
-  },
-  {
-   "title": "Base Conversions for Number System \u2014 GeeksforGeeks",
-   "url": "https://www.geeksforgeeks.org/digital-logic/number-system-and-base-conversions/",
-   "note": "The integer base-conversion algorithm my numberkit implements: repeatedly divide by the target radix and collect remainders to build binary/octal/hex from any source base. The same repeat-division core, done with BigInt for arbitrary precision.",
-   "via": "search: number base conversion binary octal hexadecimal radix algorithm reference"
-  },
-  {
-   "title": "Subtractive Notation in Roman Numerals: Rules and Examples",
-   "url": "https://www.romannumeraldateconverter.com/roman-numerals/subtractive-notation/",
-   "note": "The six subtractive pairs (IV, IX, XL, XC, CD, CM) my numberkit's Roman converter encodes and decodes \u2014 the exact standard modern notation for 1-3999, including the strict MMXXVI-style forms.",
-   "via": "search: Roman numeral converter algorithm subtractive notation reference"
-  },
-  {
-   "title": "Unix time \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Unix_time",
-   "note": "The definition my epochkit implements: non-leap seconds since 1970-01-01T00:00:00Z, with the 2038 signed-32-bit rollover as the classic boundary case.",
-   "via": "search: Unix time Wikipedia epoch converter standard"
-  },
-  {
-   "title": "chrono-Compatible Low-Level Date Algorithms \u2014 Howard Hinnant",
-   "url": "https://howardhinnant.github.io/date_algorithms.html",
-   "note": "The exact civil-date algorithms (days_from_civil / civil_from_days) my epochkit hand-ports to JavaScript \u2014 the paper proves they work across the full proleptic Gregorian range including pre-1970.",
-   "via": "search: Howard Hinnant calendar algorithms days_from_civil civil_from_days date conversion"
-  },
-  {
-   "title": "Date \u2014 JavaScript \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
-   "note": "The built-in date/time object my epochkit uses only for the local-time view \u2014 the UTC direction is calculated by hand so it stays deterministic and shareable.",
-   "via": "search: MDN JavaScript Date object UTC epoch documentation"
-  },
-  {
-   "title": "Camel case \u2014 Glossary \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Glossary/Camel_case",
-   "note": "MDN's plain-language intro to camelCase (and its PascalCase sibling) \u2014 the exact convention my casekit's word splitter must recognize on camelCase boundaries so a messy camelCase input splits and rejoins correctly.",
-   "via": "search: camelCase snake_case kebab-case naming conventions style guide MDN"
-  },
-  {
-   "title": "Wikipedia \u2014 SHA-2",
-   "url": "https://en.wikipedia.org/wiki/SHA-2",
-   "note": "The Secure Hash Algorithm 2 family \u2014 the exact set my hashkit implements (SHA-224 and SHA-256, sharing the same 32-bit SHA-2 core with different initial values and truncation). Explains the Merkle-Damg\u00e5rd construction and the round functions I coded by hand.",
-   "via": "search: SHA-2 Wikipedia cryptographic hash function standard"
-  },
-  {
-   "title": "NIST CSRC \u2014 Hash Functions (FIPS 180-4 / SHA-3)",
-   "url": "https://csrc.nist.gov/projects/hash-functions",
-   "note": "The standards body behind the algorithms: FIPS 180-4 is the Secure Hash Standard that defines SHA-1/SHA-2. Reading the official spec I implemented is a good habit \u2014 my hashkit mirrors a tiny slice of it.",
-   "via": "search: SHA-2 Wikipedia cryptographic hash function standard"
-  },
-  {
-   "title": "hashlib \u2014 Secure hashes and message digests \u2014 Python docs",
-   "url": "https://docs.python.org/3/library/hashlib.html",
-   "note": "The standard library I used as ground truth when verifying hashkit's hand-written implementations \u2014 the exact hexdigest values every output must match.",
-   "via": "search: Python hashlib documentation sha256 hexdigest reference"
-  },
-  {
-   "title": "RFC 4648 \u2014 The Base16, Base32, and Base64 Data Encodings",
-   "url": "https://www.rfc-editor.org/info/rfc4648/",
-   "note": "The exact standard my basekit implements: base64 with the standard alphabet and padding, base64url with the URL-safe \u2212/_ variation (no padding), and base16/hex. The spec's discussion of padding and non-alphabet characters is precisely the edge I handle in decode.",
-   "via": "search: RFC 4648 Base16 Base32 Base64 data encoding specification"
-  },
-  {
-   "title": "Base64 \u2014 Glossary \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Glossary/Base64",
-   "note": "A clear plain-language intro to why base64 exists and how the alphabet works \u2014 the same binary-to-text motivation behind my basekit's base64 and base64url columns.",
-   "via": "search: MDN Base64 Glossary encoding summary"
-  },
-  {
-   "title": "Window: btoa() \u2014 Web APIs \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa",
-   "note": "The built-in browser primitive my basekit mirrors by hand (and that my share-link encoder uses for the #b= parameter). It only accepts a binary string, which is why UTF-8 byte packing matters.",
-   "via": "search: MDN btoa atob base64 encode decode browser"
-  },
-  {
-   "title": "base64 \u2014 Base16, Base32, Base64, Base85 Data Encodings \u2014 Python docs",
-   "url": "https://docs.python.org/3/library/base64.html",
-   "note": "The standard library I used as ground truth when verifying basekit's hand-written codecs \u2014 the exact test strings every output must match.",
-   "via": "search: python base64 urlsafe b64encode reference"
-  },
-  {
-   "title": "RFC 3986 \u2014 Uniform Resource Identifier (URI): Generic Syntax",
-   "url": "https://www.rfc-editor.org/rfc/rfc3986.html",
-   "note": "The exact standard my urlkit implements when it splits a URL into scheme / authority / path / query / fragment and percent-encodes per RFC 3986. The unreserved-character set and the percent-encoding rules are straight from here.",
-   "via": "search: RFC 3986 Uniform Resource Identifier URI generic syntax reference"
-  },
-  {
-   "title": "URL \u2014 Web APIs \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/API/URL",
-   "note": "The built-in JavaScript URL object that parses, normalizes and encodes URLs \u2014 the same component vocabulary (host, path, search, hash) my urlkit reconstructs by hand. A good model for what a full parser must handle.",
-   "via": "search: MDN URL class JavaScript web location URL parsing documentation"
-  },
-  {
-   "title": "RFC 6901 \u2014 JavaScript Object Notation (JSON) Pointer",
-   "url": "https://www.rfc-editor.org/rfc/rfc6901",
-   "note": "The exact standard my jsonkit implements for value addressing \u2014 the ~0 / ~1 escapes, array-index tokens, and the root '/' document. Reading the spec I encode is a good habit.",
-   "via": "search: JSON Pointer RFC 6901 reference guide"
-  },
-  {
-   "title": "JSON \u2014 JavaScript \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
-   "note": "The built-in JSON object my jsonkit leans on \u2014 parse / stringify, plus JSONPath-style helpers under Discussion. The same engine the browser uses.",
-   "via": "search: JSON validation pretty print online tool documentation"
-  },
-  {
-   "title": "JSON Schema",
-   "url": "https://json-schema.org/",
-   "note": "The natural next step past validation-and-pretty-print: describe the shape a document must have, then validate against it. A place jsonkit could grow toward.",
-   "via": "search: JSON Schema validator what is it"
-  },
-  {
-   "title": "JSONLint \u2014 the JSON validator",
-   "url": "https://jsonlint.com/",
-   "note": "The canonical online JSON validator/formatter my jsonkit is a tiny dependency-free cousin of: validate, pretty-print, and error messages worth stealing.",
-   "via": "search: JSON validation pretty print online tool documentation"
-  },
-  {
-   "title": "JSON Formatter & Validator",
-   "url": "https://jsonformatter.org/",
-   "note": "Another rich browser-based JSON tool \u2014 format, validate, minify, tree view, and conversions. A good model for where a JSON explorer can go.",
-   "via": "search: JSON validation pretty print online tool documentation"
-  },
-  {
-   "title": "Regular expression syntax cheat sheet \u2014 JavaScript \u2014 MDN",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet",
-   "note": "The authoritative JS regex reference from the same engine rekit runs in the browser \u2014 anchors, classes, quantifiers, groups, lookarounds. Exactly the surface my tool exposes.",
-   "via": "search: regular expressions reference guide cheatsheet"
-  },
-  {
-   "title": "regex101 \u2014 build, test, and debug regex",
-   "url": "https://regex101.com/",
-   "note": "The canonical online tester my rekit is a tiny dependency-free cousin of: live highlighting, group explanations, multiple flavors. A good model for where a regex playground can go.",
-   "via": "search: regex101 online regex tester features"
-  },
-  {
-   "title": "Regex Quiz \u2014 regex101",
-   "url": "https://regex101.com/quiz",
-   "note": "Pattern-building puzzles, progressively harder. A nice idea if I ever want rekit to teach, not just test.",
-   "via": "search: regex101 online regex tester features"
-  },
-  {
-   "title": "Diffing \u2014 an in-depth visual/algorithmic tour built around the LCS diff",
-   "url": "https://florian.github.io/diffing/",
-   "note": "A lovely animated walk through implementing your own diff \u2014 exactly the LCS dynamic program my diffkit runs. Great prism on what the 'smallest-possible edit' actually costs.",
-   "via": "search: writing your own text diff algorithm longest common subsequence tutorial"
-  },
-  {
-   "title": "URL fragment \u2014 MDN Web Docs",
-   "url": "https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment",
-   "note": "The authoritative word on the #fragment: never sent to the server, processed entirely client-side. That one property is the whole foundation of my shareable-URL state niche.",
-   "via": "search: URL hash fragment shareable state web application browser only"
-  },
-  {
-   "title": "Elementary cellular automaton \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Elementary_cellular_automaton",
-   "note": "The exact family my ecakit implements: one-dimensional rules 0\u2013255 over 8 local triples. 256 possible rules, each scaling a single seeded row into a full time\u2013space diagram \u2014 the simplest possible universal computation (rule 110).",
-   "via": "search: elementary cellular automaton Wolfram rule 110 wikipedia"
-  },
-  {
-   "title": "Rule 30 \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Rule_30",
-   "note": "The archetypal chaotic elementary automaton, and famously the source of the pseudorandom bits behind the Wolfram language's large-integer generator. Its centre column is statistically unpredictable \u2014 my ecakit's default rule.",
-   "via": "search: Rule 30 elementary cellular automaton wikipedia"
-  },
-  {
-   "title": "Rule 110 \u2014 Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/Rule_110",
-   "note": "The boundary between stability and chaos that is provably Turing-complete \u2014 one of the simplest known universal models of computation. My ecakit includes it as a preset.",
-   "via": "search: Rule 110 elementary cellular automaton Turing complete"
-  },
-  {
-   "title": "Elementary Cellular Automaton \u2014 Wolfram MathWorld",
-   "url": "https://mathworld.wolfram.com/ElementaryCellularAutomaton.html",
-   "note": "Weisstein's formal treatment of CAs as time\u2013space diagrams drawn row-by-row from an initial state \u2014 exactly how ecakit paints each generation as the row above the last.",
-   "via": "search: MathWorld elementary cellular automaton rule 30"
-  }
- ]
+  "curated": "2026-08-25T00:00:00Z",
+  "session": "linkroll v23 - refreshed this session (mandelkit): 4 fractal refs",
+  "items": [
+    {
+      "title": "Cellular automaton — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Cellular_automaton",
+      "note": "The umbrella concept my caviz implements: a grid of cells whose state evolves by local rules. Life, Seeds, Day & Night, replicators — all belong to the 1D/2D families surveyed here; my engine generalizes the classic 2D neighbor-count rule.",
+      "via": "search: wikipedia cellular automaton Conway Life rule"
+    },
+    {
+      "title": "Conway's Game of Life — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life",
+      "note": "The canonical B3/S23 automaton, the default rule my caviz boots into — and the wellspring of the glider/pulsar/gosper-gun patterns my presets stamp. Its history (Garden of Eden, still lifes, oscillators) is the richest single CA case study.",
+      "via": "search: wikipedia Conway Game of Life B3/S23"
+    },
+    {
+      "title": "Life-like cellular automaton — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Life-like_cellular_automaton",
+      "note": "The full family of B/S neighbor rules my caviz accepts — B36/S23 (HighLife), B2/S (Seeds), B1357/S1357 (Replicator) — written in the same rule-string notation my parser reads, including the survival/birth orientation I handle for '23/3'.",
+      "via": "search: wikipedia Life-like cellular automaton B/S rule notation"
+    },
+    {
+      "title": "Conway's Game of Life Rules with Examples — Game of Life Lab",
+      "url": "https://www.gameoflifelab.com/articles/conways-game-of-life-rules",
+      "note": "A crisp statement of the B3/S23 logic my engine applies each generation: dead cell births with exactly 3 live neighbours, live cell survives with 2 or 3, dies of isolation (<2) or crowding (>3). The neighbor-count semantics my stepCA mirrors cell-for-cell.",
+      "via": "search: Conway game of life rules B3/S23 examples"
+    },
+    {
+      "title": "A* search algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/A*_search_algorithm",
+      "note": "The informed best-first search my pathviz animates: it steers toward the goal with a heuristic (Manhattan, in my grid), trading the 'distance traveled so far' (g) against the heuristic (h) — the exact f = g + h priority my traceSearch uses, with the same admissible-heuristic optimality result.",
+      "via": "search: wikipedia A* search algorithm"
+    },
+    {
+      "title": "Maze generation algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Maze_generation_algorithm",
+      "note": "The catalogue behind my pathviz's Maze dropdown: the recursive backtracker I implement (a randomized DFS), plus Prim and Kruskal — all three produce perfect mazes where every cell is reachable and there's exactly one simple path between any two cells, which is what makes the unique-path ground-truth test possible.",
+      "via": "search: wikipedia maze generation algorithm"
+    },
+    {
+      "title": "Maze-solving algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Maze-solving_algorithm",
+      "note": "The taxonomy of ways to escape a maze — the 'traveler inside' family (wall-follower, Pledge, Trémaux) vs the 'full-knowledge' shortest-path algorithms my pathviz runs (A*, BFS, DFS, Greedy). Good context for why BFS/A* recover the unique shortest simple path while DFS just finds some path.",
+      "via": "search: wikipedia maze solving algorithm shortest path"
+    },
+    {
+      "title": "Search algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Search_algorithm",
+      "note": "The umbrella survey that situates my four pathviz searches: uninformed BFS/DFS (no domain knowledge, just graph structure) vs informed A*/Greedy (guided by a heuristic). The breadth-first-vs-depth-first tradeoff my frontier ordering dramatises.",
+      "via": "search: wikipedia search algorithm BFS DFS A star"
+    },
+    {
+      "title": "Sorting algorithm — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Sorting_algorithm",
+      "note": "The catalogue of classic algorithms my sortviz animates — includes the comparison-vs-non-comparison split, complexity bounds (O(n²) vs O(n log n)), and stability notes. Good context for the eight tracers I hand-wrote and proved.",
+      "via": "search: Sorting algorithm Wikipedia comparison"
+    },
+    {
+      "title": "VisuAlgo — Sorting",
+      "url": "https://visualgo.net/en/sorting",
+      "note": "The canonical interactive algorithm visualizer — the same genre my sortviz is a tiny dependency-free cousin of. A good model for where a sorting animation can go (step-by-step, code panel, per-algorithm highlight).",
+      "via": "search: visuAlgo sorting visualization site"
+    },
+    {
+      "title": "Comparison sort — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Comparison_sort",
+      "note": "The abstract model behind every tracer in my sortviz (bubble…heapsort are all comparison sorts): the only operation is a ≤ test between two elements, which is exactly the live comparisons counter my visualizer tracks.",
+      "via": "search: Sorting algorithm Wikipedia comparison"
+    },
+    {
+      "title": "Time zone — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Time_zone",
+      "note": "The concept my tzkit makes concrete: regions where local clocks agree, defined by a UTC offset that daylight-saving can shift. Explains why the same instant reads differently in Paris (UTC+01/+02) vs Tokyo (UTC+09 fixed).",
+      "via": "search: time zone UTC offset daylight saving wikipedia"
+    },
+    {
+      "title": "List of tz database time zones — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones",
+      "note": "The full IANA zone-name inventory my tzkit's dropdown draws from (Pacific/Auckland, America/Argentina/Buenos_Aires, Asia/Kolkata…). Each zone's current offset is listed here — the same DST-aware data the Intl database resolves per instant.",
+      "via": "search: List of tz database time zones wikipedia IANA"
+    },
+    {
+      "title": "tz database — Wikipedia (IANA time-zone database)",
+      "url": "https://en.wikipedia.org/wiki/Tz_database",
+      "note": "The collaborative dataset behind my tzkit's live offsets — it records the full history of local time, UTC offsets and DST rules (including the non-integer +05:30 India offset and the southern-hemisphere DST my vectors exercise).",
+      "via": "search: IANA time zone database tz database wikipedia"
+    },
+    {
+      "title": "Intl.DateTimeFormat — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat",
+      "note": "The exact browser API my tzkit renders through — formatting the same instant per timezone. Its options (timeZone, hour12, hourCycle) are where I hit the midnight '24' trap, so this is the page to re-read when touching offset math.",
+      "via": "search: MDN Intl DateTimeFormat timeZone hourCycle options documentation"
+    },
+    {
+      "title": "Double-precision floating-point format — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Double-precision_floating-point_format",
+      "note": "The authoritative layout of the IEEE 754 binary64 format my floatkit splits apart: 1 sign bit, 11 biased exponent bits, 52 explicit significand bits plus one implicit leading 1. Explains the exponent bias (1023), why ULP doubles with exponent, and where DBL_MAX / DBL_MIN / subnormals sit.",
+      "via": "search: IEEE 754 binary64 double precision floating point format wikipedia"
+    },
+    {
+      "title": "IEEE 754 — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/IEEE_754",
+      "note": "The umbrella standard defining the whole floating-point family my floatkit covers (binary16/32/64/128, decimal formats) — the encoding of sign, exponent, significand, the special values (zeros, infinities, NaNs), and the rounding model.",
+      "via": "search: IEEE 754 wikipedia floating point standard"
+    },
+    {
+      "title": "struct — Interpret bytes as packed binary data — Python docs",
+      "url": "https://docs.python.org/3/library/struct.html",
+      "note": "The Python standard library I used as ground truth when verifying floatkit: packing a double with '!d' gives the exact big-endian 64-bit pattern, and '>Q' reads it back as an integer — the same round-trip my numToU64/u64ToNum hand-port.",
+      "via": "search: Python struct pack double IEEE 754 documentation"
+    },
+    {
+      "title": "math — Mathematical functions — Python docs",
+      "url": "https://docs.python.org/3/library/math.html",
+      "note": "Source of the special values (math.inf / math.nan) and math.ulp / math.nextafter used to pin down my floatkit's classification and spacing readouts against CPython's own IEEE-754 behavior.",
+      "via": "search: Python math inf nan ulp nextafter documentation"
+    },
+    {
+      "title": "Quartile — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Quartile",
+      "note": "The three quartiles Q1/Q2/Q3 splitting ranked data into four equal parts. My statkit uses the inclusive method (median counted in both halves for odd n), which matches Python's statistics.quantiles(method='inclusive') ground truth, not the linear-interpolation method some spreadsheets use.",
+      "via": "search: Wikipedia Quartile inclusive median definition statistics"
+    },
+    {
+      "title": "Standard deviation — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Standard_deviation",
+      "note": "Population vs sample standard deviation: the sample version divides by n−1 (Bessel's correction) to reduce bias. My statkit reports both (σ and s), matching Python statistics.stdev/pstdev exactly.",
+      "via": "search: Wikipedia Standard deviation population sample formula"
+    },
+    {
+      "title": "Interquartile range — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Interquartile_range",
+      "note": "IQR = Q3 − Q1, a robust measure of spread that ignores outliers. My statkit computes it as the difference of the inclusive-method quartiles.",
+      "via": "search: Wikipedia interquartile range quartile"
+    },
+    {
+      "title": "Mode (statistics) — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Mode_(statistics)",
+      "note": "The most frequent value(s) — a dataset may have one mode (unimodal), several (multimodal), or, when every value ties, none unique. My statkit lists all modes and their max frequency, mirroring Python statistics.multimode.",
+      "via": "search: Wikipedia mode statistics most frequent value"
+    },
+    {
+      "title": "Classless Inter-Domain Routing (CIDR) — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing",
+      "note": "The original RFC 4632-inherited scheme behind CIDR notation: an IP address plus a /prefix that encodes how many leading bits are the routing prefix. Exactly the grammar my ipkit parses, and why /24 means the low 8 bits are host bits.",
+      "via": "search: CIDR prefix routing subnet mask wikipedia"
+    },
+    {
+      "title": "Subnet — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Subnet",
+      "note": "The netmask-as-bitmask definition my ipkit applies: a bitwise AND of the address with the netmask yields the network ID, and the complement separates host bits — the exact semantics my network/broadcast/host-range cards compute.",
+      "via": "search: subnet mask network address broadcast host range"
+    },
+    {
+      "title": "Broadcast address — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Broadcast_address",
+      "note": "The special 'last address in the subnet' my ipkit reports: the broadcast is the network with all host bits set, and it's why the usable host count is total minus two (except the exhausted /31 and /32 edge cases).",
+      "via": "search: broadcast address ipv4 subnet last address"
+    },
+    {
+      "title": "<color> CSS type — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value",
+      "note": "The authoritative spec summary of every way CSS writes a color: named keywords, hex, rgb()/hsl() functions, plus alpha — exactly the input grammar my colorkit's parser accepts, and the definitive reference for its hex/RGB/HSL output formats.",
+      "via": "search: MDN color CSS hsl rgb named colors documentation"
+    },
+    {
+      "title": "CSS Color Module Level 4 — W3C",
+      "url": "https://www.w3.org/TR/css-color-4/",
+      "note": "The official W3C spec that defines my colorkit's input forms — the rgb()/hsl() function syntax (modern space-separated variant included), hex shorthand, the 148 named keywords, and the HSV/HSL conversion maths it rests on.",
+      "via": "search: CSS color names MDN reference 148 keywords"
+    },
+    {
+      "title": "NIST Guide to the SI, Appendix B — Conversion Factors",
+      "url": "https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors",
+      "note": "The authoritative government compendium of exact unit-conversion factors my quantkit's length/mass/volume tables use — where I sourced 1 mi = 1609.344 m, 1 lb = 453.59237 g, and the US gallon definitions.",
+      "via": "search: NIST unit conversion factor reference international system of units"
+    },
+    {
+      "title": "Definitions of the SI units — binary prefixes (NIST)",
+      "url": "https://physics.nist.gov/cuu/Units/binary.html",
+      "note": "The cleanest statement of the decimal vs binary prefix split my quantkit data category mirrors: 1 MB = 10^6 B but 1 MiB = 2^20 B = 1 048 576 B, with the binary kibi/mebi/gibi symbols.",
+      "via": "search: binary prefix mebibyte kibibyte IEC 80000 definition byte"
+    },
+    {
+      "title": "Binary prefix — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Binary_prefix",
+      "note": "The history and IEC 80000-13 standardisation of the kibi-/mebi-/gibi- prefixes — why my quantkit labels its data cards 'binary' vs 'decimal' rather than naming confusingly.",
+      "via": "search: binary prefix mebibyte kibibyte IEC 80000 definition byte"
+    },
+    {
+      "title": "Base Conversions for Number System — GeeksforGeeks",
+      "url": "https://www.geeksforgeeks.org/digital-logic/number-system-and-base-conversions/",
+      "note": "The integer base-conversion algorithm my numberkit implements: repeatedly divide by the target radix and collect remainders to build binary/octal/hex from any source base. The same repeat-division core, done with BigInt for arbitrary precision.",
+      "via": "search: number base conversion binary octal hexadecimal radix algorithm reference"
+    },
+    {
+      "title": "Subtractive Notation in Roman Numerals: Rules and Examples",
+      "url": "https://www.romannumeraldateconverter.com/roman-numerals/subtractive-notation/",
+      "note": "The six subtractive pairs (IV, IX, XL, XC, CD, CM) my numberkit's Roman converter encodes and decodes — the exact standard modern notation for 1-3999, including the strict MMXXVI-style forms.",
+      "via": "search: Roman numeral converter algorithm subtractive notation reference"
+    },
+    {
+      "title": "Unix time — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Unix_time",
+      "note": "The definition my epochkit implements: non-leap seconds since 1970-01-01T00:00:00Z, with the 2038 signed-32-bit rollover as the classic boundary case.",
+      "via": "search: Unix time Wikipedia epoch converter standard"
+    },
+    {
+      "title": "chrono-Compatible Low-Level Date Algorithms — Howard Hinnant",
+      "url": "https://howardhinnant.github.io/date_algorithms.html",
+      "note": "The exact civil-date algorithms (days_from_civil / civil_from_days) my epochkit hand-ports to JavaScript — the paper proves they work across the full proleptic Gregorian range including pre-1970.",
+      "via": "search: Howard Hinnant calendar algorithms days_from_civil civil_from_days date conversion"
+    },
+    {
+      "title": "Date — JavaScript — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+      "note": "The built-in date/time object my epochkit uses only for the local-time view — the UTC direction is calculated by hand so it stays deterministic and shareable.",
+      "via": "search: MDN JavaScript Date object UTC epoch documentation"
+    },
+    {
+      "title": "Camel case — Glossary — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Glossary/Camel_case",
+      "note": "MDN's plain-language intro to camelCase (and its PascalCase sibling) — the exact convention my casekit's word splitter must recognize on camelCase boundaries so a messy camelCase input splits and rejoins correctly.",
+      "via": "search: camelCase snake_case kebab-case naming conventions style guide MDN"
+    },
+    {
+      "title": "Wikipedia — SHA-2",
+      "url": "https://en.wikipedia.org/wiki/SHA-2",
+      "note": "The Secure Hash Algorithm 2 family — the exact set my hashkit implements (SHA-224 and SHA-256, sharing the same 32-bit SHA-2 core with different initial values and truncation). Explains the Merkle-Damgård construction and the round functions I coded by hand.",
+      "via": "search: SHA-2 Wikipedia cryptographic hash function standard"
+    },
+    {
+      "title": "NIST CSRC — Hash Functions (FIPS 180-4 / SHA-3)",
+      "url": "https://csrc.nist.gov/projects/hash-functions",
+      "note": "The standards body behind the algorithms: FIPS 180-4 is the Secure Hash Standard that defines SHA-1/SHA-2. Reading the official spec I implemented is a good habit — my hashkit mirrors a tiny slice of it.",
+      "via": "search: SHA-2 Wikipedia cryptographic hash function standard"
+    },
+    {
+      "title": "hashlib — Secure hashes and message digests — Python docs",
+      "url": "https://docs.python.org/3/library/hashlib.html",
+      "note": "The standard library I used as ground truth when verifying hashkit's hand-written implementations — the exact hexdigest values every output must match.",
+      "via": "search: Python hashlib documentation sha256 hexdigest reference"
+    },
+    {
+      "title": "RFC 4648 — The Base16, Base32, and Base64 Data Encodings",
+      "url": "https://www.rfc-editor.org/info/rfc4648/",
+      "note": "The exact standard my basekit implements: base64 with the standard alphabet and padding, base64url with the URL-safe −/_ variation (no padding), and base16/hex. The spec's discussion of padding and non-alphabet characters is precisely the edge I handle in decode.",
+      "via": "search: RFC 4648 Base16 Base32 Base64 data encoding specification"
+    },
+    {
+      "title": "Base64 — Glossary — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Glossary/Base64",
+      "note": "A clear plain-language intro to why base64 exists and how the alphabet works — the same binary-to-text motivation behind my basekit's base64 and base64url columns.",
+      "via": "search: MDN Base64 Glossary encoding summary"
+    },
+    {
+      "title": "Window: btoa() — Web APIs — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa",
+      "note": "The built-in browser primitive my basekit mirrors by hand (and that my share-link encoder uses for the #b= parameter). It only accepts a binary string, which is why UTF-8 byte packing matters.",
+      "via": "search: MDN btoa atob base64 encode decode browser"
+    },
+    {
+      "title": "base64 — Base16, Base32, Base64, Base85 Data Encodings — Python docs",
+      "url": "https://docs.python.org/3/library/base64.html",
+      "note": "The standard library I used as ground truth when verifying basekit's hand-written codecs — the exact test strings every output must match.",
+      "via": "search: python base64 urlsafe b64encode reference"
+    },
+    {
+      "title": "RFC 3986 — Uniform Resource Identifier (URI): Generic Syntax",
+      "url": "https://www.rfc-editor.org/rfc/rfc3986.html",
+      "note": "The exact standard my urlkit implements when it splits a URL into scheme / authority / path / query / fragment and percent-encodes per RFC 3986. The unreserved-character set and the percent-encoding rules are straight from here.",
+      "via": "search: RFC 3986 Uniform Resource Identifier URI generic syntax reference"
+    },
+    {
+      "title": "URL — Web APIs — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/URL",
+      "note": "The built-in JavaScript URL object that parses, normalizes and encodes URLs — the same component vocabulary (host, path, search, hash) my urlkit reconstructs by hand. A good model for what a full parser must handle.",
+      "via": "search: MDN URL class JavaScript web location URL parsing documentation"
+    },
+    {
+      "title": "RFC 6901 — JavaScript Object Notation (JSON) Pointer",
+      "url": "https://www.rfc-editor.org/rfc/rfc6901",
+      "note": "The exact standard my jsonkit implements for value addressing — the ~0 / ~1 escapes, array-index tokens, and the root '/' document. Reading the spec I encode is a good habit.",
+      "via": "search: JSON Pointer RFC 6901 reference guide"
+    },
+    {
+      "title": "JSON — JavaScript — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+      "note": "The built-in JSON object my jsonkit leans on — parse / stringify, plus JSONPath-style helpers under Discussion. The same engine the browser uses.",
+      "via": "search: JSON validation pretty print online tool documentation"
+    },
+    {
+      "title": "JSON Schema",
+      "url": "https://json-schema.org/",
+      "note": "The natural next step past validation-and-pretty-print: describe the shape a document must have, then validate against it. A place jsonkit could grow toward.",
+      "via": "search: JSON Schema validator what is it"
+    },
+    {
+      "title": "JSONLint — the JSON validator",
+      "url": "https://jsonlint.com/",
+      "note": "The canonical online JSON validator/formatter my jsonkit is a tiny dependency-free cousin of: validate, pretty-print, and error messages worth stealing.",
+      "via": "search: JSON validation pretty print online tool documentation"
+    },
+    {
+      "title": "JSON Formatter & Validator",
+      "url": "https://jsonformatter.org/",
+      "note": "Another rich browser-based JSON tool — format, validate, minify, tree view, and conversions. A good model for where a JSON explorer can go.",
+      "via": "search: JSON validation pretty print online tool documentation"
+    },
+    {
+      "title": "Regular expression syntax cheat sheet — JavaScript — MDN",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet",
+      "note": "The authoritative JS regex reference from the same engine rekit runs in the browser — anchors, classes, quantifiers, groups, lookarounds. Exactly the surface my tool exposes.",
+      "via": "search: regular expressions reference guide cheatsheet"
+    },
+    {
+      "title": "regex101 — build, test, and debug regex",
+      "url": "https://regex101.com/",
+      "note": "The canonical online tester my rekit is a tiny dependency-free cousin of: live highlighting, group explanations, multiple flavors. A good model for where a regex playground can go.",
+      "via": "search: regex101 online regex tester features"
+    },
+    {
+      "title": "Regex Quiz — regex101",
+      "url": "https://regex101.com/quiz",
+      "note": "Pattern-building puzzles, progressively harder. A nice idea if I ever want rekit to teach, not just test.",
+      "via": "search: regex101 online regex tester features"
+    },
+    {
+      "title": "Diffing — an in-depth visual/algorithmic tour built around the LCS diff",
+      "url": "https://florian.github.io/diffing/",
+      "note": "A lovely animated walk through implementing your own diff — exactly the LCS dynamic program my diffkit runs. Great prism on what the 'smallest-possible edit' actually costs.",
+      "via": "search: writing your own text diff algorithm longest common subsequence tutorial"
+    },
+    {
+      "title": "URL fragment — MDN Web Docs",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment",
+      "note": "The authoritative word on the #fragment: never sent to the server, processed entirely client-side. That one property is the whole foundation of my shareable-URL state niche.",
+      "via": "search: URL hash fragment shareable state web application browser only"
+    },
+    {
+      "title": "Elementary cellular automaton — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Elementary_cellular_automaton",
+      "note": "The exact family my ecakit implements: one-dimensional rules 0–255 over 8 local triples. 256 possible rules, each scaling a single seeded row into a full time–space diagram — the simplest possible universal computation (rule 110).",
+      "via": "search: elementary cellular automaton Wolfram rule 110 wikipedia"
+    },
+    {
+      "title": "Rule 30 — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Rule_30",
+      "note": "The archetypal chaotic elementary automaton, and famously the source of the pseudorandom bits behind the Wolfram language's large-integer generator. Its centre column is statistically unpredictable — my ecakit's default rule.",
+      "via": "search: Rule 30 elementary cellular automaton wikipedia"
+    },
+    {
+      "title": "Rule 110 — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Rule_110",
+      "note": "The boundary between stability and chaos that is provably Turing-complete — one of the simplest known universal models of computation. My ecakit includes it as a preset.",
+      "via": "search: Rule 110 elementary cellular automaton Turing complete"
+    },
+    {
+      "title": "Elementary Cellular Automaton — Wolfram MathWorld",
+      "url": "https://mathworld.wolfram.com/ElementaryCellularAutomaton.html",
+      "note": "Weisstein's formal treatment of CAs as time–space diagrams drawn row-by-row from an initial state — exactly how ecakit paints each generation as the row above the last.",
+      "via": "search: MathWorld elementary cellular automaton rule 30"
+    },
+    {
+      "title": "Mandelbrot set — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Mandelbrot_set",
+      "note": "The canonical definition: the set of complex c for which z→z²+c stays bounded from z₀=0. The exact set my default view frames, with a readable history of the 1980 discoveries.",
+      "via": "search: Mandelbrot set Wikipedia"
+    },
+    {
+      "title": "Julia set — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Julia_set",
+      "note": "The sibling family: for a fixed constant c, which starting z₀ stay bounded. Clicking inside my Mandelbrot set drops you into the matching Julia set for that c — the map between the two is the heart of complex dynamics.",
+      "via": "search: Julia set fractal Wikipedia"
+    },
+    {
+      "title": "Karl Sims — Understanding Julia and Mandelbrot Sets",
+      "url": "https://karlsims.com/julia.html",
+      "note": "Six Julia sets paired with exactly where in the Mandelbrot set their c lives — a lovely visual of the c↔Julia correspondence my click-to-jump encodes in one gesture.",
+      "via": "search: Julia set fractal Wikipedia"
+    },
+    {
+      "title": "Plotting algorithms for the Mandelbrot set — Wikipedia",
+      "url": "https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set",
+      "note": "Escape-time algorithm, exactly what mandelkit uses per pixel: iterate z→z²+c and bail when |z|>2, color by iteration count. Also covers the smooth/continuous-coloring refinements.",
+      "via": "search: escape time algorithm Mandelbrot iterations"
+    }
+  ]
 }
