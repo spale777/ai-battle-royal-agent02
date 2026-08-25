@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>&#9653; CA Lab &mdash; cellular automata engine (agent-02)</title>
+<style>
+  :root{ --bg:#0b0e14; --panel:#12161f; --line:#1f2634; --fg:#d6dde8; --mut:#7a8496;
+    --accent:#4f8cff; --accent2:#36d07a; --live:#36d07a; --dying:#ff5d5d; --born:#ffd24d;
+    --btn:#1b2230 }
+  *{box-sizing:border-box}
+  body{ margin:0; font:15px/1.45 ui-monospace,Menlo,Consolas,monospace; color:var(--fg);
+    background:radial-gradient(120% 90% at 15% -10%, #15202f 0%, transparent 55%),
+      radial-gradient(120% 90% at 100% 110%, #141a2b 0%, transparent 60%), var(--bg);
+    min-height:100vh }
+  .wrap{ max-width:1120px; margin:0 auto; padding:26px 18px 70px }
+  h1{ font-size:22px; margin:0 0 4px; letter-spacing:.02em }
+  h1 .num{ color:var(--accent2); font-size:15px; margin-right:8px; vertical-align:2px }
+  .sub{ color:var(--mut); margin:0 0 18px; font-size:12.5px }
+  .sub code{ background:var(--btn); padding:1px 6px; border-radius:4px; color:var(--fg) }
+  .grid{ display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; align-items:start }
+  @media (max-width:880px){ .grid{ grid-template-columns:1fr } }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px }
+  .card h2{ font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--mut);
+    margin:0 0 10px; font-weight:600 }
+  canvas#cv{ display:block; width:100%; background:#080b11; border-radius:8px;
+    border:1px solid var(--line); image-rendering:pixelated; touch-action:manipulation }
+  .controls{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px }
+  button{ background:var(--btn); color:var(--fg); border:1px solid var(--line); border-radius:7px;
+    padding:7px 14px; font:inherit; font-size:13px; cursor:pointer; transition:.12s }
+  button:hover{ border-color:var(--accent); color:#fff }
+  button.primary{ background:#1c3a63; border-color:var(--accent) }
+  button:disabled{ opacity:.4; cursor:default }
+  .row{ margin-top:10px }
+  .row label{ font-size:12px; color:var(--mut); display:block; margin-bottom:5px;
+    text-transform:uppercase; letter-spacing:.08em }
+  input[type=text], input[type=number]{ background:#0d1119; border:1px solid var(--line); color:var(--fg);
+    font:inherit; font-size:13px; border-radius:7px; padding:7px 10px; width:100% }
+  input[type=text]:focus, input[type=number]:focus{ outline:none; border-color:var(--accent) }
+  input[type=range]{ width:100%; accent-color:var(--accent) }
+  .statline{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin-top:8px }
+  .statline b{ color:var(--accent2); font-weight:700 }
+  .hint{ font-size:11.5px; color:var(--mut); margin-top:8px; line-height:1.5 }
+  .btnrow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+  .btnrow button{ padding:5px 10px; font-size:12px }
+  .seedrow{ display:flex; gap:8px; align-items:center }
+  .seedrow input{ flex:1 }
+  .err{ color:var(--dying); font-size:12.5px; min-height:16px; margin-top:6px }
+  svg.spark{ width:100%; height:54px; display:block; margin-top:10px; background:#0a0e15;
+    border:1px solid var(--line); border-radius:7px }
+  .legend{ display:flex; gap:14px; font-size:11.5px; color:var(--mut); margin-top:10px; flex-wrap:wrap }
+  .legend i{ display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px }
+  a{ color:var(--accent); text-decoration:none } a:hover{ text-decoration:underline }
+  .foot{ margin-top:26px; color:var(--mut); font-size:11.5px; line-height:1.6;
+    border-top:1px solid var(--line); padding-top:14px }
+  .foot code{ background:var(--btn); padding:0 5px; border-radius:4px }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="num">26th artifact</span>&#9653; CA Lab <span style="color:var(--mut);font-weight:400;font-size:14px">&mdash; cellular automata engine</span></h1>
+  <p class="sub">Neighborhood <code>B/S</code> rules on a grid, animated live. The whole run lives in the address bar
+  <code>#c=&hellip;</code> &mdash; every configuration reproduces itself as a shareable link. Determinism proven against a 96-vector Python corpus.</p>
+
+  <div class="grid">
+    <div class="card">
+      <canvas id="cv" width="760" height="400"></canvas>
+      <div class="controls">
+        <button id="play" class="primary">&#9654; Play</button>
+        <button id="step">Step &#9654;</button>
+        <button id="clear">Clear</button>
+        <button id="random">Random</button>
+        <button id="share">&#128279; Share</button>
+      </div>
+      <div class="statline">
+        <span>gen <b id="gen">0</b></span>
+        <span>alive <b id="pop">0</b></span>
+        <span>density <b id="dens">&mdash;</b></span>
+        <span>speed <b id="spdlab">60</b>/s</span>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--live)"></i>alive</span>
+        <span><i style="background:var(--dying)"></i>just died</span>
+        <span><i style="background:var(--born)"></i>just born</span>
+        <span style="margin-left:auto">click / drag on grid to draw</span>
+      </div>
+      <svg class="spark" id="spark" viewBox="0 0 300 54" preserveAspectRatio="none"></svg>
+      <div class="err" id="err"></div>
+    </div>
+
+    <div class="card">
+      <h2>rule &amp; setup</h2>
+      <div class="row">
+        <label for="rule">rule &nbsp;B<b style="color:var(--born)">birth</b> / S<b style="color:var(--live)">survive</b></label>
+        <input type="text" id="rule" value="B3/S23" spellcheck="false" autocomplete="off">
+      </div>
+      <div class="btnrow" id="presets">
+        <button data-rule="B3/S23">Life</button>
+        <button data-rule="B36/S23">HighLife</button>
+        <button data-rule="B3/S2">Pseudo</button>
+        <button data-rule="B2/S">Seeds</button>
+        <button data-rule="B1357/S1357">Replicator</button>
+        <button data-rule="B3/S123456">D&amp;N</button>
+        <button data-rule="B36/S125">2&times;2</button>
+      </div>
+      <div class="row">
+        <label for="seed">seed</label>
+        <div class="seedrow">
+          <input type="text" id="seed" value="42" spellcheck="false">
+          <button id="seedRand" title="random seed">&#127922;</button>
+        </div>
+      </div>
+      <div class="row"><label for="cols">width <span id="colslab">80</span></label>
+        <input type="range" id="cols" min="32" max="140" step="4" value="80"></div>
+      <div class="row"><label for="rows">height <span id="rowslab">40</span></label>
+        <input type="range" id="rows" min="16" max="70" step="2" value="40"></div>
+      <div class="row"><label for="dens">density <span id="denslab">0.22</span></label>
+        <input type="range" id="dens" min="0" max="100" step="5" value="25"></div>
+      <div class="row"><label for="speed">speed <span id="speedlab">60</span>/s</label>
+        <input type="range" id="speed" min="2" max="240" step="1" value="60"></div>
+      <div class="row">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0">
+          <input type="checkbox" id="tor" checked style="width:auto"> toroidal edges (wrap)
+        </label>
+      </div>
+      <div class="row">
+        <label style="margin-bottom:7px">patterns</label>
+        <div class="btnrow" id="patterns">
+          <button data-pat="glider">Glider</button>
+          <button data-pat="blinker">Blinker</button>
+          <button data-pat="gosper">Gosper</button>
+          <button data-pat="pulsar">Pulsar</button>
+          <button data-pat="rpent">R-pento</button>
+        </div>
+      </div>
+      <div class="hint">A rule is <code>B3/S23</code> (birth / survival), <code>23/3</code>, or <code>B3S23</code>.
+      Patterns stamp onto the current grid. The whole configuration is the URL &mdash; open the share link on a fresh tab
+      to reproduce the exact run.</div>
+    </div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   PURE CORE — determinism ground truth. No DOM access.
+   Sliced by scripts/test-caviz.js between the two CORE markers.
+   ============================================================ */
+/* === CORE BEGIN === */
+/* mulberry32 PRNG (deterministic); byte-for-byte mirrored by Python ground truth. */
+function makeRng(seed){
+  var s = (seed >>> 0);
+  return function(){
+    s = (s + 0x6D2B79F5) >>> 0;
+    var t = s;
+    t = Math.imul(t ^ (t >>> 15), 1 | t) >>> 0;
+    t = ((t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t) >>> 0;
+    t = (t ^ (t >>> 14)) >>> 0;
+    return t / 4294967296.0;
+  };
+}
+/* parseRule('B3/S23') -> {B:bool[9], S:bool[9]} or null. */
+function parseRule(rs){
+  if (typeof rs !== 'string') return null;
+  var up = rs.toUpperCase().replace(/\s+/g, '');
+  var b = [], s = [], i;
+  if (up.indexOf('/') >= 0){
+    /* slash form: "B3/S23" | "23/3" (survival/birth) | "B3S23" handled below */
+    var parts = up.split('/');
+    var gotB = false, gotS = false;
+    for (i = 0; i < parts.length; i++){
+      var seg = parts[i], digs = seg.replace(/[^0-9]/g, '').split('').map(Number);
+      if (seg.charAt(0) === 'B'){ b = digs; gotB = true; gotS = false; }
+      else if (seg.charAt(0) === 'S'){ s = digs; gotS = true; gotB = false; }
+      else {
+        /* bare group: "23/3" is survival/birth — first is survival, rest birth */
+        if (!gotB && !gotS && b.length === 0 && s.length === 0){ s = digs; gotS = true; }
+        else if (gotS){ b = digs; gotB = true; }
+        else { b = digs; gotB = true; }
+      }
+    }
+  } else {
+    var bi = up.indexOf('B'), si = up.indexOf('S');
+    if (bi >= 0 && si > bi){ b = up.slice(bi + 1, si).replace(/[^0-9]/g, '').split('').map(Number); s = up.slice(si + 1).replace(/[^0-9]/g, '').split('').map(Number); }
+    else if (bi >= 0){ b = up.slice(bi + 1).replace(/[^0-9]/g, '').split('').map(Number); s = []; }
+    else if (si >= 0){ b = []; s = up.slice(si + 1).replace(/[^0-9]/g, '').split('').map(Number); }
+    else { b = up.replace(/[^0-9]/g, '').split('').map(Number); s = []; }
+  }
+  var B9 = new Array(9), S9 = new Array(9);
+  for (i = 0; i < 9; i++){ B9[i] = false; S9[i] = false; }
+  for (i = 0; i < b.length; i++){ var db = b[i]; if (db >= 0 && db <= 8) B9[db] = true; }
+  for (i = 0; i < s.length; i++){ var ds = s[i]; if (ds >= 0 && ds <= 8) S9[ds] = true; }
+  if (b.length === 0) return null;
+  return { B: B9, S: S9 };
+}
+/* neighbor count for cell idx c; toroidal wrap or sliding edge off-grid. */
+function neighborCount(grid, w, h, c, tor){
+  var x = c % w, y = (c / w) | 0, n = 0, dx, dy, xx, yy;
+  for (dy = -1; dy <= 1; dy++) for (dx = -1; dx <= 1; dx++){
+    if (dx === 0 && dy === 0) continue;
+    if (tor){ xx = (x + dx + w) % w; yy = (y + dy + h) % h; }
+    else {
+      xx = x + dx; yy = y + dy;
+      if (xx < 0 || xx >= w || yy < 0 || yy >= h) continue;
+    }
+    if (grid[yy * w + xx]) n++;
+  }
+  return n;
+}
+/* one generation step; returns a NEW Uint8Array. grid is Uint8Array(0/1). */
+function stepCA(grid, w, h, B9, S9, tor){
+  var out = new Uint8Array(w * h), c, n;
+  for (c = 0; c < w * h; c++){
+    n = neighborCount(grid, w, h, c, tor);
+    out[c] = ((grid[c] ? S9[n] : B9[n]) ? 1 : 0);
+  }
+  return out;
+}
+/* seeded initial random grid (density in 0..1). */
+function initRandom(seed, w, h, density){
+  var rd = makeRng(seed), g = new Uint8Array(w * h), c;
+  for (c = 0; c < w * h; c++) g[c] = (rd() < density) ? 1 : 0;
+  return g;
+}
+var B64U_CH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+/* grid -> row-major bitmask -> base64url (unpadded). */
+function b64EncodeGrid(grid, w, h){
+  var bits = '', c;
+  for (c = 0; c < grid.length; c++) bits += grid[c] ? '1' : '0';
+  var rem = bits.length % 8;
+  if (rem) bits = bits + '0000000'.slice(0, 8 - rem);
+  var bytes = [], i;
+  for (i = 0; i < bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
+  return b64uFromBytes(bytes);
+}
+function b64uFromBytes(bytes){
+  var s = '', i, n, rem, a, b, c2;
+  for (i = 0; i + 2 < bytes.length; i += 3){
+    n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    s += B64U_CH[(n >> 18) & 63] + B64U_CH[(n >> 12) & 63] + B64U_CH[(n >> 6) & 63] + B64U_CH[n & 63];
+  }
+  rem = bytes.length - i;
+  if (rem === 1){ a = bytes[i]; s += B64U_CH[(a >> 2) & 63] + B64U_CH[(a << 4) & 63]; }
+  else if (rem === 2){ a = bytes[i]; b = bytes[i + 1]; s += B64U_CH[(a >> 2) & 63] + B64U_CH[((a << 4) | (b >> 4)) & 63] + B64U_CH[(b << 2) & 63]; }
+  return s;
+}
+/* inverse: base64url -> Uint8Array of bytes. */
+function b64uToBytes(t){
+  var i, lut = {}, out = [], k;
+  for (k = 0; k < 64; k++) lut[B64U_CH[k]] = k;
+  for (i = 0; i < t.length; i += 4){
+    var a = lut[t[i]], b = lut[t[i + 1]],
+        cval = (i + 2) < t.length ? (lut[t[i + 2]] || 0) : 0,
+        dval = (i + 3) < t.length ? (lut[t[i + 3]] || 0) : 0;
+    out.push((a << 2) | (b >> 4));
+    if (i + 2 < t.length) out.push(((b << 4) | (cval >> 2)) & 255);
+    if (i + 3 < t.length) out.push(((cval << 6) | dval) & 255);
+  }
+  return Uint8Array.from(out);
+}
+/* === CORE END === */
+
+/* ============================================================
+   UI WIRING (DOM access allowed below).
+   ============================================================ */
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+function $(id){ return document.getElementById(id); }
+
+var D = { rule: 'B3/S23', seed: 42, w: 80, h: 40, density: 0.25, tor: true, speed: 60 };
+var grid = null, prev = null;   /* prev = last drawn generation for colour diff */
+var gen = 0, popHist = [], playing = false, timer = null, runParsed = null;
+
+function setErr(m){ $('err').textContent = m || ''; }
+function countAlive(){ var n = 0, i; for (i = 0; i < grid.length; i++) if (grid[i]) n++; return n; }
+
+function makeEmpty(w, h){ return new Uint8Array(w * h); }
+function freshGrid(){
+  grid = makeEmpty(D.w, D.h);
+  prev = new Uint8Array(D.w * D.h);
+  gen = 0; popHist = [];
+}
+function resetForSeed(){
+  grid = initRandom(D.seed, D.w, D.h, D.density);
+  prev = new Uint8Array(D.w * D.h);
+  gen = 0; popHist = [];
+}
+function draw(){
+  var W = cv.width, H = cv.height, cw = W / D.w, ch = H / D.h, x, y, c;
+  ctx.fillStyle = '#080b11';
+  ctx.fillRect(0, 0, W, H);
+  for (y = 0; y < D.h; y++) for (x = 0; x < D.w; x++){
+    c = y * D.w + x;
+    var col = null;
+    if (grid[c]){
+      if (prev && !prev[c]) col = '#ffd24d';   /* born */
+      else col = '#36d07a';                     /* alive */
+    } else if (prev && prev[c]){ col = '#ff5d5d'; } /* died */
+    if (col){ ctx.fillStyle = col; ctx.fillRect(x * cw, y * ch, cw + 0.5, ch + 0.5); }
+  }
+}
+function tickOnce(){
+  var old = grid;
+  grid = stepCA(old, D.w, D.h, runParsed.B, runParsed.S, D.tor);
+  prev = old;
+  gen++;
+  popHist.push(countAlive());
+  if (popHist.length > 400) popHist.shift();
+  updateWidgets(); draw(); updateHash();
+}
+function animate(){
+  stopTimer();
+  timer = setInterval(function(){
+    if (!runParsed){ setErr('invalid rule \u2014 needs birth digits, e.g. B3/S23'); stop(); return; }
+    tickOnce();
+  }, Math.max(8, 1000 / D.speed));
+}
+function stopTimer(){ if (timer){ clearInterval(timer); timer = null; } }
+function drawSpark(){
+  var svg = $('spark'), n = popHist.length, i, max = 1, pts = [];
+  if (n < 2){ $('spark').innerHTML = ''; return; }
+  for (i = 0; i < n; i++) if (popHist[i] > max) max = popHist[i];
+  for (i = 0; i < n; i++){
+    var x = (i / (n - 1)) * 300, y = 53 - (popHist[i] / max) * 50;
+    pts.push(x.toFixed(1) + ',' + y.toFixed(1));
+  }
+  $('spark').innerHTML = '<polyline fill="none" stroke="#36d07a" stroke-width="1.4" points="' + pts.join(' ') + '"/>';
+}
+function updateWidgets(){
+  var a = countAlive();
+  $('gen').textContent = gen;
+  $('pop').textContent = a;
+  $('dens').textContent = (a / (D.w * D.h)).toFixed(3);
+  $('spdlab').textContent = D.speed;
+  $('colslab').textContent = D.w;
+  $('rowslab').textContent = D.h;
+  $('denslab').textContent = D.density;
+  $('speedlab').textContent = D.speed;
+  drawSpark();
+}
+function seedFill(){ $('seed').value = String(D.seed); }
+
+/* --- hash --- */
+function b64json(o){ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function deb64(s){ var r = s.replace(/-/g,'+').replace(/_/g,'/'); while (r.length % 4) r += '='; return decodeURIComponent(escape(atob(r))); }
+function stateObj(){
+  return { r: D.rule, s: D.seed, w: D.w, h: D.h, d: D.density, t: D.tor ? 1 : 0, sp: D.speed, g: gen, x: b64EncodeGrid(grid, D.w, D.h) };
+}
+function updateHash(){ history.replaceState(null, '', '#' + b64json(stateObj())); }
+function hashUrl(prefix){
+  var u = location.href.split('#')[0];
+  return u + (prefix || '') + '#' + b64json(stateObj());
+}
+function loadFromHash(){
+  var h = window.location.hash;
+  if (!h || h.indexOf('#') !== 0) return false;
+  var txt = h.slice(1);
+  if (!txt) return false;
+  var obj;
+  try { obj = JSON.parse(deb64(txt)); } catch (e){ return false; }
+  if (!obj || typeof obj !== 'object' || typeof obj.w !== 'number' || typeof obj.h !== 'number') return false;
+  D.rule = (typeof obj.r === 'string' && obj.r) ? obj.r : D.rule;
+  if (typeof obj.s === 'number') D.seed = obj.s >>> 0;
+  if (typeof obj.w === 'number') D.w = clampDim(obj.w, 16, 200);
+  if (typeof obj.h === 'number') D.h = clampDim(obj.h, 10, 120);
+  if (typeof obj.d === 'number') D.density = Math.min(1, Math.max(0, obj.d));
+  D.tor = (obj.t !== 0);
+  if (typeof obj.sp === 'number') D.speed = Math.min(240, Math.max(2, obj.sp));
+  runParsed = parseRule(D.rule);
+  if (obj.x){
+    grid = gridFromB64(obj.x, D.w, D.h);
+    prev = new Uint8Array(D.w * D.h);
+  } else {
+    grid = initRandom(D.seed, D.w, D.h, D.density);
+    prev = new Uint8Array(D.w * D.h);
+  }
+  gen = (typeof obj.g === 'number' && obj.g >= 0) ? obj.g : 0;
+  popHist = [];
+  return true;
+}
+function clampDim(n, lo, hi){ if (!(n >= lo) || !(n <= hi)) return lo; return n | 0; }
+function gridFromB64(b64, w, h){
+  var bytes = b64uToBytes(b64), g = new Uint8Array(w * h), i, bit = 0;
+  for (i = 0; i < g.length; i++){
+    var byte = bytes[i >> 3], shift = 7 - (i & 7);
+    g[i] = (byte & (1 << shift)) ? 1 : 0;
+  }
+  return g;
+}
+
+/* --- controls --- */
+var playBtn = $('play');
+function stop(){ stopTimer(); playing = false; playBtn.textContent = '\u25B6 Play'; }
+function start(){ if (!runParsed){ setErr('invalid rule \u2014 needs birth digits'); return; } playing = true; playBtn.textContent = '\u23F8 Pause'; animate(); }
+function togglePlay(){ if (playing) stop(); else start(); }
+function refreshRuleFromInput(){
+  var v = $('rule').value;
+  runParsed = parseRule(v);
+  if (!runParsed){ setErr('invalid rule \u2014 needs birth digits, e.g. B3/S23'); return; }
+  D.rule = v.trim();
+  setErr('');
+}
+function applySliders(){
+  D.w = parseInt($('cols').value, 10) || 80;
+  D.h = parseInt($('rows').value, 10) || 40;
+  D.density = (parseInt($('dens').value, 10) || 0) / 100;
+  D.tor = $('tor').checked;
+}
+function reseedFromInputs(){
+  applySliders();
+  D.seed = (parseInt($('seed').value, 10) || 0) >>> 0;
+  resetForSeed();
+  updateWidgets(); draw(); updateHash();
+}
+
+/* patterns */
+var PATTERNS = {
+  glider: [[1,0],[2,1],[0,2],[1,2],[2,2]],
+  blinker: [[1,0],[1,1],[1,2]],
+  rpent:  [[1,0],[2,0],[0,1],[1,1],[1,2]],
+  pulsar: pulsarCells(),
+  gosper: gosperCells()
+};
+function pulsarCells(){
+  var p = [], spots = [[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],
+    [0,2],[5,2],[7,2],[12,2],[0,3],[5,3],[7,3],[12,3],[0,4],[5,4],[7,4],[12,4],
+    [2,5],[3,5],[4,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[8,7],[9,7],[10,7],
+    [0,8],[5,8],[7,8],[12,8],[0,9],[5,9],[7,9],[12,9],[0,10],[5,10],[7,10],[12,10],
+    [2,12],[3,12],[4,12],[8,12],[9,12],[10,12]];
+  for (var i = 0; i < spots.length; i++) p.push([spots[i][1], spots[i][0]]);
+  return p;
+}
+function gosperCells(){
+  var cells = [], spots = [[0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],
+    [3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],
+    [5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],
+    [7,11],[7,15],[7,23],[8,12],[8,13]];
+  for (var i = 0; i < spots.length; i++) cells.push([spots[i][1], spots[i][0]]);
+  return cells;
+}
+function stampPattern(name){
+  var cells = PATTERNS[name];
+  if (!cells){ setErr('unknown pattern ' + name); return; }
+  stop();
+  var minC = 1e9, maxC = -1e9, minR = 1e9, maxR = -1e9, i;
+  for (i = 0; i < cells.length; i++){ var cX = cells[i][0], rY = cells[i][1]; if (cX < minC) minC = cX; if (cX > maxC) maxC = cX; if (rY < minR) minR = rY; if (rY > maxR) maxR = rY; }
+  var dc = ((D.w - (maxC - minC)) / 2) | 0, dr = ((D.h - (maxR - minR)) / 2) | 0;
+  for (i = 0; i < cells.length; i++){
+    var c2 = cells[i][0] + dc, r2 = cells[i][1] + dr;
+    if (c2 >= 0 && c2 < D.w && r2 >= 0 && r2 < D.h) grid[r2 * D.w + c2] = 1;
+  }
+  prev = new Uint8Array(D.w * D.h);
+  draw(); updateHash();
+}
+
+/* drawing with mouse */
+var drawing = false;
+function cellAt(ev){
+  var rect = cv.getBoundingClientRect();
+  var x = Math.floor((ev.clientX - rect.left) / rect.width * D.w);
+  var y = Math.floor((ev.clientY - rect.top) / rect.height * D.h);
+  if (x < 0 || x >= D.w || y < 0 || y >= D.h) return -1;
+  return y * D.w + x;
+}
+cv.addEventListener('mousedown', function(ev){
+  var c = cellAt(ev); if (c < 0) return;
+  drawing = true; grid[c] = grid[c] ? 0 : 1; prev = new Uint8Array(D.w*D.h); draw(); updateHash(); ev.preventDefault();
+});
+cv.addEventListener('mousemove', function(ev){
+  if (!drawing) return;
+  var c = cellAt(ev); if (c < 0) return;
+  grid[c] = 1; prev = new Uint8Array(D.w*D.h); draw(); updateHash();
+});
+window.addEventListener('mouseup', function(){ drawing = false; });
+cv.addEventListener('touchstart', function(ev){ var t = ev.touches[0]; var c = cellAt({clientX:t.clientX, clientY:t.clientY}); if (c<0) return; drawing=true; grid[c]=grid[c]?0:1; prev=new Uint8Array(D.w*D.h); draw(); updateHash(); ev.preventDefault(); }, {passive:false});
+cv.addEventListener('touchmove', function(ev){ if(!drawing) return; var t=ev.touches[0]; var c=cellAt({clientX:t.clientX,clientY:t.clientY}); if(c<0) return; grid[c]=1; prev=new Uint8Array(D.w*D.h); draw(); updateHash(); ev.preventDefault(); }, {passive:false});
+cv.addEventListener('touchend', function(){ drawing=false; });
+
+/* button wiring */
+playBtn.onclick = togglePlay;
+$('step').onclick = function(){ stop(); if (!runParsed){ setErr('invalid rule'); return; } tickOnce(); };
+$('clear').onclick = function(){ stop(); freshGrid(); updateHash(); draw(); };
+$('random').onclick = function(){ stop(); D.seed = (Math.random() * 4294967296) >>> 0; seedFill(); resetForSeed(); updateHash(); updateWidgets(); draw(); };
+$('share').onclick = function(){
+  var u = hashUrl('');
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(u).then(function(){ setErr('link copied'); }, function(){ setErr(u); });
+  } else { setErr(u); }
+};
+$('seedRand').onclick = function(){ D.seed = (Math.random() * 4294967296) >>> 0; seedFill(); reseedFromInputs(); };
+
+$('rule').addEventListener('input', function(){ refreshRuleFromInput(); updateHash(); });
+$('seed').addEventListener('change', reseedFromInputs);
+
+/* cols/rows/dens/tor reseed the grid; speed just re-rates the timer */
+$('cols').addEventListener('change', reseedFromInputs);
+$('rows').addEventListener('change', reseedFromInputs);
+$('dens').addEventListener('change', reseedFromInputs);
+$('tor').addEventListener('change', reseedFromInputs);
+$('speed').addEventListener('change', function(){ applySliders(); D.speed = parseInt($('speed').value,10)||60; stopTimer(); if (playing) animate(); updateWidgets(); });
+$('speed').addEventListener('input', function(){ $('speedlab').textContent = $('speed').value; });
+
+/* presets + patterns (event delegation) */
+$('presets').addEventListener('click', function(ev){
+  var b = ev.target.closest('button'); if (!b) return;
+  $('rule').value = b.getAttribute('data-rule');
+  refreshRuleFromInput(); updateHash();
+});
+$('patterns').addEventListener('click', function(ev){
+  var b = ev.target.closest('button'); if (!b) return;
+  stampPattern(b.getAttribute('data-pat'));
+});
+
+/* hashtag change listener: react to a hash applied while page is open */
+window.addEventListener('hashchange', function(){
+  if (loadFromHash()){
+    stop(); syncInputs(); updateWidgets(); draw(); updateHash();
+  }
+});
+
+function syncInputs(){
+  $('rule').value = D.rule;
+  seedFill();
+  $('cols').value = D.w; $('colslab').textContent = D.w;
+  $('rows').value = D.h; $('rowslab').textContent = D.h;
+  $('dens').value = Math.round(D.density * 100); $('denslab').textContent = D.density;
+  $('speed').value = D.speed; $('speedlab').textContent = D.speed;
+  $('tor').checked = D.tor;
+}
+
+/* init */
+(function init(){
+  var loaded = loadFromHash();
+  if (!loaded){
+    runParsed = parseRule(D.rule);
+    grid = initRandom(D.seed, D.w, D.h, D.density);
+    prev = new Uint8Array(D.w * D.h);
+  }
+  syncInputs();
+  updateWidgets();
+  draw();
+  updateHash();
+  var yr = new Date().getUTCFullYear();
+  $('foot').innerHTML = '26th artifact &middot; <b>CA Lab</b> &mdash; a hand-written cellular-automata engine. ' +
+    'Core determinism proven byte-for-byte against a 96-vector Python corpus (8 rules &times; 4 seeds &times; 3 sizes, 24 gens each): ' +
+    '<code>scripts/gen-caviz-vectors.py</code> &rarr; <code>scripts/vectors-caviz.json</code> &rarr; <code>scripts/test-caviz.js</code>. ' +
+    'shares the URL-state rule of the rest of the shelf (#' + (D.rule) + '). Built by agent-02, ' + yr + '.';
+})();
+</script>
+</body>
+</html>
