@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>▤ ECA Lab &mdash; elementary cellular automata (agent-02)</title>
+<style>
+  :root{ --bg:#0b0e14; --panel:#12161f; --line:#1f2634; --fg:#d6dde8; --mut:#7a8496;
+    --accent:#4f8cff; --accent2:#36d07a; --live:#36d07a; --born:#ffd24d; --btn:#1b2230 }
+  *{box-sizing:border-box}
+  body{ margin:0; font:15px/1.45 ui-monospace,Menlo,Consolas,monospace; color:var(--fg);
+    background:radial-gradient(120% 90% at 15% -10%, #15202f 0%, transparent 55%),
+      radial-gradient(120% 90% at 100% 110%, #141a2b 0%, transparent 60%), var(--bg);
+    min-height:100vh }
+  .wrap{ max-width:1120px; margin:0 auto; padding:26px 18px 70px }
+  h1{ font-size:22px; margin:0 0 4px; letter-spacing:.02em }
+  h1 .num{ color:var(--accent2); font-size:15px; margin-right:8px; vertical-align:2px }
+  .sub{ color:var(--mut); margin:0 0 18px; font-size:12.5px }
+  .sub code{ background:var(--btn); padding:1px 6px; border-radius:4px; color:var(--fg) }
+  .grid{ display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; align-items:start }
+  @media (max-width:880px){ .grid{ grid-template-columns:1fr } }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px }
+  .card h2{ font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--mut);
+    margin:0 0 10px; font-weight:600 }
+  canvas#cv{ display:block; width:100%; background:#080b11; border-radius:8px;
+    border:1px solid var(--line); image-rendering:pixelated; touch-action:manipulation }
+  .controls{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px }
+  button{ background:var(--btn); color:var(--fg); border:1px solid var(--line); border-radius:7px;
+    padding:7px 14px; font:inherit; font-size:13px; cursor:pointer; transition:.12s }
+  button:hover{ border-color:var(--accent); color:#fff }
+  button.primary{ background:#1c3a63; border-color:var(--accent) }
+  button:disabled{ opacity:.4; cursor:default }
+  .row{ margin-top:10px }
+  .row label{ font-size:12px; color:var(--mut); display:block; margin-bottom:5px;
+    text-transform:uppercase; letter-spacing:.08em }
+  input[type=text], input[type=number]{ background:#0d1119; border:1px solid var(--line); color:var(--fg);
+    font:inherit; font-size:13px; border-radius:7px; padding:7px 10px; width:100% }
+  input[type=text]:focus, input[type=number]:focus{ outline:none; border-color:var(--accent) }
+  input[type=range]{ width:100%; accent-color:var(--accent) }
+  .statline{ display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin-top:8px }
+  .statline b{ color:var(--accent2); font-weight:700 }
+  .hint{ font-size:11.5px; color:var(--mut); margin-top:8px; line-height:1.5 }
+  .btnrow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+  .btnrow button{ padding:5px 10px; font-size:12px }
+  .seedrow{ display:flex; gap:8px; align-items:center }
+  .seedrow input{ flex:1 }
+  .err{ color:#ff5d5d; font-size:12.5px; min-height:16px; margin-top:6px }
+  .legend{ display:flex; gap:14px; font-size:11.5px; color:var(--mut); margin-top:10px; flex-wrap:wrap }
+  .legend i{ display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px }
+  a{ color:var(--accent); text-decoration:none } a:hover{ text-decoration:underline }
+  .foot{ margin-top:26px; color:var(--mut); font-size:11.5px; line-height:1.6;
+    border-top:1px solid var(--line); padding-top:14px }
+  .foot code{ background:var(--btn); padding:0 5px; border-radius:4px }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="num">27th artifact</span>&#9636; ECA Lab <span style="color:var(--mut);font-weight:400;font-size:14px">&mdash; elementary cellular automata</span></h1>
+  <p class="sub">One-dimensional Wolfram rules <code>0&ndash;255</code> on a seeded row, animated live. The whole run lives in the address bar
+  <code>#k=&hellip;</code> &mdash; every configuration reproduces itself as a shareable link. Determinism proven against a Python corpus.</p>
+
+  <div class="grid">
+    <div class="card">
+      <canvas id="cv" width="760" height="480"></canvas>
+      <div class="controls">
+        <button id="run" class="primary">&#9654; Run</button>
+        <button id="step">Step &#9654;</button>
+        <button id="clear">&#8634; Reset</button>
+        <button id="share">&#128279; Share</button>
+      </div>
+      <div class="statline">
+        <span>gen <b id="gen">1</b></span>
+        <span>cells <b id="n">80</b></span>
+        <span>alive <b id="pop">&mdash;</b></span>
+        <span>speed <b id="spdlab">48</b>/s</span>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--live)"></i>alive</span>
+        <span><i style="background:var(--born)"></i>just born</span>
+        <span style="margin-left:auto">every row evolves from the one above</span>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+
+    <div class="card">
+      <h2>rule &amp; setup</h2>
+      <div class="row">
+        <label for="rule">rule (Wolfram 0&ndash;255)</label>
+        <input type="text" id="rule" value="30" spellcheck="false" autocomplete="off">
+      </div>
+      <div class="btnrow" id="presets">
+        <button data-rule="30">Rule 30</button>
+        <button data-rule="54">Rule 54</button>
+        <button data-rule="90">Rule 90</button>
+        <button data-rule="110">Rule 110</button>
+        <button data-rule="184">Rule 184</button>
+      </div>
+      <div class="row">
+        <label for="seed">seed</label>
+        <div class="seedrow">
+          <input type="text" id="seed" value="42" spellcheck="false">
+          <button id="seedRand" title="random seed">&#127922;</button>
+        </div>
+      </div>
+      <div class="row">
+        <label for="edges">edges</label>
+        <select id="edges">
+          <option value="0">dead (zero)</option>
+          <option value="1">wrap (cyclic)</option>
+        </select>
+      </div>
+      <div class="row"><label for="initrow">first row</label>
+        <select id="initrow">
+          <option value="single">single live cell</option>
+          <option value="random">seeded random</option>
+        </select>
+      </div>
+      <div class="row"><label for="density">random density <span id="denslab">0.35</span></label>
+        <input type="range" id="density" min="0" max="100" step="5" value="35"></div>
+      <div class="row"><label for="cells">cells (col width) <span id="cslab">4px</span></label>
+        <input type="range" id="cells" min="1" max="16" step="1" value="4"></div>
+      <div class="row"><label for="speed">speed <span id="speedlab">48</span>/s</label>
+        <input type="range" id="speed" min="2" max="240" step="1" value="48"></div>
+      <p class="hint">The canvas is a seeded time&ndash;space diagram: each new row on top derives from the row below it by the chosen rule. Rule&nbsp;30 is chaotic, 90 is fractal (Sierpinski), 110 is Turing&nbsp;-complete, 184 is traffic flow. Cell width sets resolution: fewer, wider cells &rarr; fewer rows.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <code>#k=&#8230;</code> encodes rule, seed, edges, first-row mode, density, cell width, speed &amp; generation. Hand-built, dependency-free, single file.
+    <br>Core (init + one step) is a marked block loaded by a Node suite and diffed byte-for-byte against a Python mulberry32 corpus.
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ECAkit — 1D elementary cellular automata engine (agent-02)
+   Pure core between CORE BEGIN / CORE END is loaded verbatim by
+   scripts/test-ecakit.js and diffed against a Python corpus.
+   ============================================================ */
+
+var D = { rule: 30, seed: 42, edges: 0, initrow: 'single', density: 0.35, cell: 4, speed: 48, gen: 0 };
+
+/* === CORE BEGIN === */
+/* mulberry32 PRNG (deterministic); byte-for-byte mirrored by Python ground truth. */
+function mulberry32(seed){
+  var s = seed >>> 0, t;
+  return function(){
+    s = (s + 0x6D2B79F5) >>> 0;
+    t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/* Canonical mulberry32 accumulate+XOR step (used by initRandom). */
+function mulberryStep(x){
+  var t = x >>> 0;
+  t = (t + 0x6D2B79F5) >>> 0;
+  var v = t;
+  v = Math.imul(v ^ (v >>> 15), v | 1);
+  v ^= v + Math.imul(v ^ (v >>> 7), v | 61);
+  return ((v ^ (v >>> 14)) >>> 0) / 4294967296;
+}
+
+/* Initialise a width-w boolean row (Uint8Array) either as a single centre
+   live cell or seeded random at the given density (mulberry32(seed)). */
+function initRow(seed, w, mode, density){
+  var g = new Uint8Array(w), i;
+  if (mode === 'random'){
+    var rnd = mulberry32(seed);
+    for (i = 0; i < w; i++) g[i] = rnd() < density ? 1 : 0;
+  } else {
+    g[(w - 1) >> 1] = 1;           /* single live cell in the centre */
+  }
+  return g;
+}
+
+/* One rule-30 step of a length-n boolean row, edges: 0 dead / 1 wrap.
+   Left/centre/right triple forms an 8-neighborhood index 111..000 ->
+   output bit = (rule >> index) & 1.  row is read-only; returns a new row. */
+function stepCA(row, n, rule, edges){
+  var out = new Uint8Array(n), i, l, c, r, idx;
+  for (i = 0; i < n; i++){
+    if (edges === 1){
+      l = row[(i + n - 1) % n]; c = row[i]; r = row[(i + 1) % n];
+    } else {
+      l = (i === 0) ? 0 : row[i - 1]; c = row[i]; r = (i === n - 1) ? 0 : row[i + 1];
+    }
+    idx = (l << 2) | (c << 1) | r;
+    out[i] = (rule >> idx) & 1;
+  }
+  return out;
+}
+/* === CORE END === */
+
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+var grid = null, rows = 0, timer = null, running = false;
+var BORN_REFRESH = 40;               /* frames for which a freshly-set row shows as "born" */
+
+function $(id){ return document.getElementById(id); }
+
+function currentRows(){
+  var ch = Math.floor(cv.height / D.cell);   /* integer cell height */
+  return Math.max(1, ch);
+}
+
+function rebuild(){
+  rows = currentRows();
+  var n = Math.floor(cv.width / D.cell) | 0;
+  if (n < 3) n = 3;
+  grid = new Uint8Array(n * rows);
+  /* first (bottom) row holds the initial condition; the rest empty */
+  var ir = initRow(D.seed, n, D.initrow, D.density);
+  for (var i = 0; i < n; i++) grid[(rows - 1) * n + i] = ir[i];
+  D.gen = 0;
+}
+
+function stepOnce(){
+  var n = Math.floor(cv.width / D.cell) | 0;
+  if (n < 3) n = 3;
+  /* shift every row up by one: row k <- row k+1 (top drops off) */
+  for (var k = 0; k < rows - 1; k++){
+    for (var i = 0; i < n; i++) grid[k * n + i] = grid[(k + 1) * n + i];
+  }
+  /* derive a fresh bottom row from the previous bottom row */
+  var src = new Uint8Array(n);
+  for (i = 0; i < n; i++) src[i] = grid[(rows - 1) * n + i];
+  var nxt = stepCA(src, n, D.rule, D.edges);
+  for (i = 0; i < n; i++) grid[(rows - 1) * n + i] = nxt[i];
+  D.gen++;
+  updateStats();
+}
+
+function draw(){
+  var n = Math.floor(cv.width / D.cell) | 0;
+  if (n < 3) n = 3;
+  ctx.fillStyle = '#080b11';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  var on = (D.rule >> 0) & 1;   /* whether a 0-neighborhood triple is live (born colour) */
+  var i, j, v, born;
+  for (j = 0; j < rows; j++){
+    for (i = 0; i < n; i++){
+      v = grid[j * n + i];
+      if (!v) continue;
+      if (j === rows - 1 && D.gen === 0){
+        ctx.fillStyle = '#36d07a';
+      } else {
+        /* a live cell on the current bottom row that follows a dead 000 triple
+           is brand-new -> highlight; approximate by checking its own neighbours */
+        var l = (i === 0) ? (D.edges ? grid[j*n+n-1] : 0) : grid[j*n+i-1];
+        var r = (i === n-1) ? (D.edges ? grid[j*n] : 0) : grid[j*n+i+1];
+        var above = (j > 0) ? grid[(j-1)*n+i] : 0;
+        born = above === 0 ? 1 : 0;   /* newly filled cell below an empty one */
+        ctx.fillStyle = born ? '#ffd24d' : '#36d07a';
+      }
+      ctx.fillRect(i * D.cell, j * D.cell, D.cell, D.cell);
+    }
+  }
+}
+
+function updateStats(){
+  var n = Math.floor(cv.width / D.cell) | 0;
+  if (n < 3) n = 3;
+  var alive = 0, i;
+  for (i = 0; i < n; i++) alive += grid[(rows - 1) * n + i];
+  $('gen').textContent = D.gen;
+  $('n').textContent = n;
+  $('pop').textContent = alive;
+}
+
+function updateWidgets(){
+  $('rule').value = D.rule;
+  $('seed').value = D.seed;
+  $('edges').value = String(D.edges);
+  $('initrow').value = D.initrow;
+  $('density').value = Math.round(D.density * 100);
+  $('denslab').textContent = D.density.toFixed(2);
+  $('cells').value = D.cell;
+  $('cslab').textContent = D.cell + 'px';
+  $('speed').value = D.speed;
+  $('speedlab').textContent = D.speed;
+}
+
+function stateObj(){
+  return { r: D.rule, s: D.seed, e: D.edges, m: D.initrow, d: D.density, c: D.cell, sp: D.speed, g: D.gen };
+}
+
+function b64json(o){ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function deb64(s){ var r = s.replace(/-/g,'+').replace(/_/g,'/'); while (r.length % 4) r += '='; return decodeURIComponent(escape(atob(r))); }
+
+function updateHash(){ history.replaceState(null, '', '#k=' + b64json(stateObj())); }
+
+function shareUrl(){
+  var u = location.href.split('#')[0];
+  return u + '#k=' + b64json(stateObj());
+}
+
+function applyHash(txt){
+  var prefix = '#k=';
+  if (txt.substring(0, prefix.length) !== prefix) return false;
+  var obj;
+  try { obj = JSON.parse(deb64(txt.substring(prefix.length))); }
+  catch (e){ return false; }
+  if (obj === null || typeof obj !== 'object') return false;
+  if (typeof obj.r === 'number') D.rule = Math.min(255, Math.max(0, Math.floor(obj.r))) || 0;
+  if (typeof obj.s === 'number') D.seed = obj.s >>> 0;
+  if (typeof obj.e === 'number') D.edges = obj.e ? 1 : 0;
+  if (obj.m === 'random' || obj.m === 'single') D.initrow = obj.m;
+  if (typeof obj.d === 'number') D.density = Math.min(1, Math.max(0, obj.d));
+  if (typeof obj.c === 'number') D.cell = Math.min(16, Math.max(1, Math.floor(obj.c))) || 1;
+  if (typeof obj.sp === 'number') D.speed = Math.min(240, Math.max(2, Math.floor(obj.sp))) || 2;
+  return true;
+}
+
+function tryLoad(){
+  var h = window.location.hash;
+  if (h && applyHash(h)) { rebuild(); return true; }
+  rebuild();
+  return false;
+}
+
+function renderAll(){
+  updateWidgets();
+  rebuild();
+  updateStats();
+  draw();
+  updateHash();
+}
+
+function stop(){
+  running = false;
+  if (timer){ clearInterval(timer); timer = null; }
+  $('run').textContent = '▶ Run';
+}
+
+function setSpeed(){
+  if (running){
+    stop();
+    start();
+  }
+}
+
+function start(){
+  if (running) return;
+  running = true;
+  $('run').textContent = '❚❚ Pause';
+  var ms = Math.max(40, Math.floor(1000 / D.speed));
+  timer = setInterval(function(){
+    stepOnce();
+    draw();
+    updateHash();
+  }, ms);
+}
+
+function clearGrid(){
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+}
+
+/* ---- wiring ---- */
+$('run').onclick = function(){ if (running) stop(); else start(); };
+$('step').onclick = function(){ stop(); stepOnce(); draw(); updateHash(); };
+$('clear').onclick = clearGrid;
+$('share').onclick = function(){
+  var u = shareUrl();
+  var el = $('err');
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(u).then(function(){ el.textContent = 'link copied'; },
+        function(){ el.textContent = u; });
+  } else { el.textContent = u; }
+};
+
+var presetBtns = document.querySelectorAll('#presets button');
+Array.prototype.forEach.call(presetBtns, function(b){
+  b.onclick = function(){
+    stop();
+    var r = parseInt(b.getAttribute('data-rule'), 10);
+    if (!isNaN(r)) D.rule = Math.min(255, Math.max(0, r));
+    updateWidgets();
+    rebuild();
+    draw();
+    updateHash();
+  };
+});
+
+$('rule').addEventListener('input', function(){
+  var v = parseInt(this.value, 10);
+  if (isNaN(v)) return;
+  D.rule = Math.min(255, Math.max(0, v));
+  stop();
+  draw();
+  updateHash();
+});
+
+$('seed').addEventListener('input', function(){
+  var v = parseInt(this.value, 10);
+  if (isNaN(v)) return;
+  D.seed = (v >>> 0);
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+});
+
+$('seedRand').onclick = function(){
+  D.seed = (Math.random() * 4294967296) >>> 0;
+  $('seed').value = D.seed;
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+};
+
+$('edges').addEventListener('change', function(){
+  D.edges = this.value === '1' ? 1 : 0;
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+});
+
+$('initrow').addEventListener('change', function(){
+  D.initrow = this.value;
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+});
+
+$('density').addEventListener('input', function(){
+  D.density = (parseInt(this.value, 10) || 0) / 100;
+  $('denslab').textContent = D.density.toFixed(2);
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+});
+
+$('cells').addEventListener('input', function(){
+  D.cell = Math.min(16, Math.max(1, parseInt(this.value, 10) || 1));
+  $('cslab').textContent = D.cell + 'px';
+  stop();
+  rebuild();
+  draw();
+  updateHash();
+});
+
+$('speed').addEventListener('input', function(){
+  D.speed = Math.min(240, Math.max(2, parseInt(this.value, 10) || 2));
+  $('speedlab').textContent = D.speed;
+  setSpeed();
+  updateHash();
+});
+
+window.addEventListener('hashchange', function(){
+  if (window.location.hash && applyHash(window.location.hash)){
+    stop();
+    updateWidgets();
+    rebuild();
+    updateStats();
+    draw();
+    updateHash();
+  }
+});
+
+/* ---- init ---- */
+tryLoad();
+renderAll();
+</script>
+</body>
+</html>
