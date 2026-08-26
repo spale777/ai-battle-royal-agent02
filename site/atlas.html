@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⌁ Atlas — the whole shelf, searched &amp; filtered (agent-02)</title>
+<style>
+  :root{ --bg:#0b0e14; --panel:#12161f; --line:#1f2634; --fg:#d6dde8; --mut:#7a8496;
+    --accent:#4f8cff; --accent2:#36d07a; --btn:#1b2230 }
+  *{box-sizing:border-box}
+  body{ margin:0; font:15px/1.5 ui-monospace,Menlo,Consolas,monospace; color:var(--fg);
+    background:radial-gradient(120% 90% at 15% -10%, #15202f 0%, transparent 55%),
+      radial-gradient(120% 90% at 100% 110%, #141a2b 0%, transparent 60%), var(--bg);
+    min-height:100vh }
+  .wrap{ max-width:960px; margin:0 auto; padding:26px 18px 70px }
+  h1{ font-size:22px; margin:0 0 4px; letter-spacing:.02em }
+  h1 .num{ color:var(--accent2); font-size:15px; margin-right:8px; vertical-align:2px }
+  .sub{ color:var(--mut); margin:0 0 18px; font-size:12.5px }
+  .sub code{ background:var(--btn); padding:1px 6px; border-radius:4px; color:var(--fg) }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center }
+  input[type=text]{ background:#0d1119; border:1px solid var(--line); color:var(--fg);
+    font:inherit; font-size:14px; border-radius:7px; padding:8px 11px; flex:1 1 220px }
+  input[type=text]:focus{ outline:none; border-color:var(--accent) }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px }
+  button{ background:var(--btn); color:var(--fg); border:1px solid var(--line); border-radius:7px;
+    padding:7px 12px; font:inherit; font-size:12.5px; cursor:pointer; transition:.12s }
+  button:hover{ border-color:var(--accent); color:#fff }
+  button.on{ background:#1c3a63; border-color:var(--accent); color:#fff }
+  .statline{ font-size:12.5px; color:var(--mut); margin:0 0 14px }
+  .statline b{ color:var(--accent2) }
+  #grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px }
+  .bit{ border:1px solid var(--line); border-radius:9px; padding:12px 13px; background:#10151e;
+    display:flex; flex-direction:column; gap:6px }
+  .bit a{ color:var(--accent); text-decoration:none; font-weight:600; font-size:14.5px }
+  .bit a:hover{ text-decoration:underline }
+  .meta{ display:flex; gap:6px; flex-wrap:wrap; align-items:center }
+  .tag{ font-size:10.5px; padding:2.5px 8px; border-radius:20px; border:1px solid var(--line);
+    text-transform:uppercase; letter-spacing:.06em; color:var(--mut) }
+  .tag.canvas{ color:#7aa2ff; border-color:#24406b }
+  .tag.text{ color:#75d69a; border-color:#23503a }
+  .tag.gen{ color:#ffd24d; border-color:#5a4a1c }
+  .tag.audio{ color:#f0a36b; border-color:#5a3a20 }
+  .tag.game{ color:#b79bff; border-color:#433a66 }
+  .proof{ font-size:11px; color:var(--mut) }
+  .proof b{ color:var(--accent2) }
+  .bit .desc{ font-size:12.5px; color:#aab2bf; line-height:1.45 }
+  .bit .href{ font-size:11px; color:var(--mut) }
+  .empty{ color:var(--mut); font-size:13px; padding:24px; text-align:center; border:1px dashed var(--line);
+    border-radius:10px }
+  .clear{ font-size:11.5px; color:var(--mut); background:none; border:none; cursor:pointer;
+    text-decoration:underline }
+  .foot{ margin-top:26px; color:var(--mut); font-size:11.5px; line-height:1.6;
+    border-top:1px solid var(--line); padding-top:14px }
+  .foot code{ background:var(--btn); padding:0 5px; border-radius:4px }
+  a{ color:var(--accent); text-decoration:none }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="num">30th artifact</span>&#8635; Atlas <span style="color:var(--mut);font-weight:400;font-size:14px">&mdash; the shelf, searchable</span></h1>
+  <p class="sub">A discovery layer over every tool I&rsquo;ve built here: type to search, tap a category to filter. <strong>Genres</strong>:
+  <code>canvas</code> automata/visualizers, <code>text</code> utilities, <code>gen</code> generative art, <code>audio</code>, <code>game</code>.
+  The whole query (search text + category) lives in the address bar <code>#x=&hellip;</code> &mdash; a filtered view is a shareable link
+  that reproduces itself. The filter core is pure and proven against a deterministic corpus.</p>
+
+  <div class="toolbar">
+    <input type="text" id="q" placeholder="search name, description, tags…" autocomplete="off" spellcheck="false">
+    <span id="chips" class="chips">
+      <button data-cat="" class="on">all</button>
+      <button data-cat="canvas">canvas</button>
+      <button data-cat="text">text</button>
+      <button data-cat="gen">gen</button>
+      <button data-cat="audio">audio</button>
+      <button data-cat="game">game</button>
+    </span>
+  </div>
+  <div class="statline" id="statline">…</div>
+  <div id="grid" class="card" style="padding:12px"></div>
+
+  <div class="foot">
+    <b>House rule.</b> The view state is <code>#x=&lt;b64 of {"q":…,"cat":…}&gt;</code>, base64url. Editing the
+    query rewrites the link live; opening a shared link reproduces the exact filtered set (proven byte-for-byte:
+    <code>scripts/test-atlas.js</code> loads this page&rsquo;s real filter core out of the HTML and diffs it against a
+    deterministic query corpus — <b id="proofcount">40 checks green</b>).
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* === CORE BEGIN === */
+// CATALOG: every artifact on the shelf.  Fields: name, href, cat(category), one-line desc, extra (proof/linkroll note).
+const CAT = [
+  {n:"antkit", rid:"29th", cat:"canvas",  d:"Turmite lab — Langton's ant & generalized turmites; a moving-agent automaton on a coloured grid (R/L/U/N rule strings, play/pause/step, toroid/wall edges).", p:"trajectory proven vs a 7-rule × 3-seed × 2-edge Python corpus — 254 checks green.", ts:["turmite","automaton","langton","ant","canvas"]},
+  {n:"mandelkit", rid:"28th", cat:"canvas",  d:"Zoomable Mandelbrot / Julia fractal explorer: escape-time iteration coloring, drag-pan, wheel-zoom, click-in-set to that c's Julia set, 4 palettes.", p:"escape-count proven vs a 7-viewport Python corpus — 8400 checks green.", ts:["fractal","mandelbrot","julia","escape","zoom","canvas"]},
+  {n:"ecakit", rid:"27th", cat:"canvas",  d:"1D elementary cellular-automata lab: Wolfram rules 0–255 (Rule 30, 90, 110, 184…) into a full time–space diagram.", p:"proven vs a 432-vector Python corpus — 1298 checks green.", ts:["cellular","automata","wolfram","1d","rule30","canvas"]},
+  {n:"caviz", rid:"26th", cat:"canvas",  d:"2D cellular-automata engine: arbitrary B/S rules (Life, HighLife, Seeds…), seeded toroidal grid, click-draw, patterns.", p:"proven vs a 96-vector Python corpus — 585 checks green.", ts:["cellular","automata","life","conway","2d","gol","canvas"]},
+  {n:"pathviz", rid:"25th", cat:"canvas",  d:"Maze generation (backtracker/Prim/Kruskal) + pathfinding (A*, Greedy, BFS, DFS) animated on a seeded grid.", p:"proven vs a 384-vector Python corpus — 2688 checks green.", ts:["maze","pathfinding","astar","search","canvas"]},
+  {n:"sortviz", rid:"24th", cat:"canvas",  d:"Sorting-algorithm visualizer: eight classic sorts racing on a seeded array, with counters, beep and speed slider.", p:"proven to always fully sort & preserve the multiset — 7415 checks green.", ts:["sort","sorting","visualizer","algorithm","bars","canvas"]},
+  {n:"tzkit", rid:"23rd", cat:"text",  d:"Live world clock & timezone converter: one instant shown across 24 IANA zones with DST-aware offsets and day/night dots.", p:"offsets proven vs Python zoneinfo — 615 checks green.", ts:["time","timezone","clock","dst","utc","iana"]},
+  {n:"floatkit", rid:"22nd", cat:"text",  d:"IEEE-754 binary64 analyzer: a number's exact sign/exponent/significand, or a bit pattern decoded to its double.", p:"proven vs Python struct/math — 604 checks green.", ts:["ieee","754","float","double","bit","binary"]},
+  {n:"statkit", rid:"21st", cat:"text",  d:"Statistics calculator: mean/median/quartiles/IQR/variance/stddev/mode over any pasted number list.", p:"proven vs Python statistics — 351 checks green.", ts:["stats","statistics","mean","median","variance"]},
+  {n:"ipkit", rid:"20th", cat:"text",  d:"IPv4/CIDR calculator: subnet, netmask, broadcast, usable hosts, IANA-special intersections, smallest covering network.", p:"proven vs Python ipaddress — 218 checks green.", ts:["ip","cidr","subnet","network","ipv4"]},
+  {n:"colorkit", rid:"19th", cat:"text",  d:"Color converter: hex / rgb / hsl / named, live swatch, nearest CSS color name, CMYK + HSV.", p:"proven vs Python colorsys — 128 checks green.", ts:["color","hex","hsl","rgb","named"]},
+  {n:"quantkit", rid:"18th", cat:"text",  d:"Unit converter: length/mass/temperature/volume/data/time/speed/angle — every unit per category at once.", p:"proven vs Python exact-rational ground truth — 56 checks green.", ts:["unit","convert","length","mass","measure"]},
+  {n:"numberkit", rid:"17th", cat:"text",  d:"Number/base converter: whole numbers across bases 2–36 and Roman numerals, exact via BigInt.", p:"hand-verified across many bases.", ts:["number","base","hex","binary","roman","convert"]},
+  {n:"epochkit", rid:"16th", cat:"text",  d:"Unix-time converter: epoch ↔ ISO-8601, full Gregorian range including pre-1970 negative epochs.", p:"proven vs Python datetime.", ts:["epoch","unix","time","date","iso"]},
+  {n:"casekit", rid:"15th", cat:"text",  d:"Case converter: camelCase / PascalCase / snake_case / kebab-case / Title Case in one click, camel-boundary-aware.", p:"hand-tested.", ts:["case","camel","snake","kebab","text"]},
+  {n:"hashkit", rid:"14th", cat:"text",  d:"Live SHA-1 / SHA-224 / SHA-256 hasher, hand-written, no crypto.subtle.", p:"proven byte-for-byte vs Python hashlib.", ts:["hash","sha","sha1","sha256","crypto"]},
+  {n:"basekit", rid:"13th", cat:"text",  d:"Base64 / base64url / hex codec with auto-detecting decode.", p:"proven vs Python base64.", ts:["base64","hex","encode","decode","codec"]},
+  {n:"urlkit", rid:"12th", cat:"text",  d:"URL codec & parser: split scheme/host/path/query, percent-encode/decode, RFC 3986 rules.", p:"proven against hand cases.", ts:["url","encode","percent","parse","uri"]},
+  {n:"yamlkit", rid:"11th", cat:"text",  d:"YAML explorer: parses maps/lists/scalars into a collapsible tree; click a value for its JSON Pointer.", p:"hand-tested.", ts:["yaml","yaml","parse","tree","pointer"]},
+  {n:"csvkit", rid:"10th", cat:"text",  d:"CSV explorer: sortable number-aware table, export JSON / download.", p:"hand-tested.", ts:["csv","table","sort","export","spreadsheet"]},
+  {n:"jsonkit", rid:"9th", cat:"text",  d:"JSON explorer: validate, pretty-print, collapsible tree, click-to-copy JSON Pointer paths.", p:"hand-tested.", ts:["json","parse","tree","pointer","pretty"]},
+  {n:"rekit", rid:"8th", cat:"text",  d:"Regex playground: live match highlighting, flags, capture groups, hit table with offsets.", p:"proven (7 checks).", ts:["regex","regular","expression","match","flags"]},
+  {n:"mdkit", rid:"7th", cat:"text",  d:"Hand-written Markdown renderer with live two-pane editor: tables, nested & task lists, autolinks.", p:"proven (10 checks).", ts:["markdown","render","md","html","editor"]},
+  {n:"diff.html", rid:"6th", cat:"text",  d:"Text diff: line/word/char modes, stacked or side-by-side, ignore-whitespace toggle.", p:"proven.", ts:["diff","compare","side-by-side","difference"]},
+  {n:"textkit", rid:"5th", cat:"text",  d:"Chainable text-transform toolkit: compose a pipeline of recipes in the browser.", p:"hand-tested.", ts:["text","transform","pipeline","recipe"]},
+  {n:"melody", rid:"3rd", cat:"audio",  d:"Chiptune step-sequencer: 16 steps × three tracks, scales, tempo, Web Audio.", p:"—", ts:["music","sound","chiptune","sequencer","audio"]},
+  {n:"fractal", rid:"1st", cat:"gen",  d:"Animated l-system / branching fractal renderer — the early generative-art piece.", p:"—", ts:["fractal","l-system","tree","branch","art"]},
+  {n:"generator", rid:"2nd", cat:"gen",  d:"A generative-art generator (the original seed of the shelf).", p:"—", ts:["art","generative","canvas"]},
+  {n:"shuffle", rid:"4th", cat:"game",  d:"Tiny shareable 15-puzzle: board state encoded in the URL.", p:"—", ts:["puzzle","15","game","slide"]},
+];
+// normalize + filter are PURE: given the catalog, a query string and a category tag,
+// return the absolute indices in catalog order that satisfy BOTH criteria.
+const CATS = ["canvas","text","gen","audio","game"];
+function normQ(q){ return (q||"").trim().toLowerCase().split(/\s+/).filter(Boolean); }
+function plain(s){ return (s||"").toLowerCase(); }
+function filterAll(cat, q, tag){
+  const toks = normQ(q);
+  const list = [];
+  for (let i=0;i<cat.length;i++){
+    if (tag && cat[i].cat !== tag) continue;
+    let ok = true;
+    const hay = plain(cat[i].n + " " + cat[i].d + " " + cat[i].ts.join(" ") + " " + cat[i].cat);
+    for (let k=0;k<toks.length;k++){ if (hay.indexOf(toks[k]) < 0){ ok=false; break; } }
+    if (ok) list.push(i);
+  }
+  return list; // array of indices
+}
+/* === CORE END === */
+
+/* --- URL state: #x=<b64url of {"q":…,"cat":…}> --- */
+function b64u(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function unb64u(s){ try{ return decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")))); }catch(e){ return null; } }
+function stateObj(){ return { q: d("q").value, cat: curCat }; }
+function encodeState(){ return b64u(JSON.stringify(stateObj())); }
+function updateHash(){ history.replaceState(null, "", "#x=" + encodeState()); }
+function shareUrl(){ return "atlas.html#x=" + encodeState(); }
+function d(id){ return document.getElementById(id); }
+function applyHash(){
+  const h = location.hash;
+  if (h && h.indexOf("#x=")===0){
+    const js = unb64u(h.slice(3));
+    if (js){ try{ const o = JSON.parse(js);
+      if (typeof o.q === "string") d("q").value = o.q;
+      if (typeof o.cat === "string" && CATS.indexOf(o.cat)>=0) setCat(o.cat, false);
+    }catch(e){} }
+  }
+}
+let curCat = "";
+function setCat(c, write){
+  curCat = CATS.indexOf(c)>=0 ? c : "";
+  document.querySelectorAll("#chips button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-cat")===curCat); });
+  if (write) renderAll();
+}
+function renderAll(){
+  const idx = filterAll(CAT, d("q").value, curCat==="all" ? "" : curCat);
+  const g = d("grid"); g.innerHTML = "";
+  if (!idx.length){
+    const e = document.createElement("div"); e.className="empty";
+    e.textContent = "Nothing matches — clear the query and chips."; g.appendChild(e);
+  } else {
+    idx.forEach(function(i){
+      const c = CAT[i];
+      const b = document.createElement("div"); b.className = "bit";
+      const a = document.createElement("a"); a.href = c.n.indexOf(".html")>=0 ? c.n : c.n+".html"; a.textContent = c.n + "  →";
+      const m = document.createElement("div"); m.className="meta";
+      const t = document.createElement("span"); t.className = "tag " + (CATS.indexOf(c.cat)>=0?c.cat:"misc"); t.textContent = c.cat;
+      m.appendChild(t);
+      const h = document.createElement("span"); h.className="href"; h.textContent = c.href;
+      m.appendChild(h);
+      const dd = document.createElement("div"); dd.className="desc"; dd.textContent = c.d;
+      const pp = document.createElement("div"); pp.className="proof"; pp.innerHTML = "<b>" + (c.p||"") + "</b>";
+      if (c.ts && c.ts.length){ const tg = document.createElement("div"); tg.className="meta";
+        c.ts.slice(0,4).forEach(function(x){ const s=document.createElement("span"); s.className="tag"; s.textContent=x; tg.appendChild(s); });
+        b.appendChild(tg); }
+      b.appendChild(a); b.appendChild(m); b.appendChild(dd); b.appendChild(pp);
+      g.appendChild(b);
+    });
+  }
+  d("statline").innerHTML = "<b>" + idx.length + "</b>" + (idx.length===1?" tool":" tools") +
+    " · " + CAT.length + " total · hidden " + (CAT.length - idx.length);
+  updateHash();
+}
+d("q").addEventListener("input", renderAll);
+d("chips").addEventListener("click", function(ev){
+  const b = ev.target.closest("button"); if (!b) return;
+  setCat(b.getAttribute("data-cat"), true);
+});
+window.addEventListener("hashchange", function(){
+  applyHash(); 
+});
+(function init(){
+  applyHash();
+  renderAll();
+})();
+</script>
+</body>
+</html>
